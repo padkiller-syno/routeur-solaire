@@ -563,6 +563,35 @@ sensor:
       if (!id(g_e1_init_ok)) return NAN;
       return id(g_conso);
 
+  # Ce qui part sur le réseau EDF (pince du canal 2) : puissance réseau négative, rendue positive.
+  - platform: template
+    id: injection_reseau
+    name: "Injection réseau"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    icon: mdi:transmission-tower-export
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: |-
+      if (!id(g_e1_init_ok)) return NAN;
+      return id(g_conso) < 0 ? -id(g_conso) : 0.0f;
+
+  # Énergie injectée cumulée, calculée dans l'ESP à partir de la puissance (indépendante du sens des compteurs
+  # du JSY) ; gardée en flash. Dans HA : tableau Énergie → « Retour au réseau ».
+  - platform: integration
+    name: "Énergie injectée"
+    sensor: injection_reseau
+    time_unit: h
+    integration_method: trapezoid
+    restore: true
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
   - platform: template
     name: "Puissance ballon"
     unit_of_measurement: W

@@ -194,7 +194,9 @@ automatisations et la carte à votre installation.
 | `sensor.sdb_routeur_solaire_energie_routee_aujourd_hui` (kWh depuis 4h30 ou le démarrage) | « Energie sauvée aujourd'hui » |
 | `sensor.sdb_routeur_solaire_temperature_ballon` (°C, toutes les 30 s) | « Température ballon » |
 
-Nouveaux : `sensor.sdb_routeur_solaire_sortie_dimmer` (%), `sensor.sdb_routeur_solaire_temperature_triac` (diagnostic),
+Nouveaux : `sensor.sdb_routeur_solaire_injection_reseau` (W partis sur le réseau, pince du canal 2),
+`sensor.sdb_routeur_solaire_energie_injectee` (kWh, calculée dans l'ESP, gardée en flash : « Retour au réseau » du
+tableau Énergie), `sensor.sdb_routeur_solaire_sortie_dimmer` (%), `sensor.sdb_routeur_solaire_temperature_triac` (diagnostic),
 `binary_sensor.sdb_routeur_solaire_ballon_chaud`, `…_securite_triac`, `…_relais_surplus`, `…_relais_marche_forcee`,
 `…_mesure_jsy` (déconnecté si aucune trame valide depuis 3 s : dimmer coupé), `sensor.ballon_temperature_max_7_jours` (HA).
 
