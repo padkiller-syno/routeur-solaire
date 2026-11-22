@@ -8,9 +8,9 @@ ballon d'eau chaude, et garantir de l'eau chaude le soir. (Une première version
 - Gardé : JSY-MK-194T, **2 dimmers** (même table de pas que la v9.15), relais surplus (sortie 3), relais de marche
   forcée, sonde DS18B20 du ballon.
 - Ajouté : sonde DS18B20 de sécurité sur le radiateur des triacs, détection « ballon chaud », seuils du relais réglables
-  depuis HA, anti-légionelle, marche forcée de secours si HA est injoignable, **relais Bluetooth** pour HA.
-- Retiré : écran OLED, page web ESP-DASH, topics MQTT `mosquitto/...`.
-- **Deux cœurs** : wifi, Bluetooth et pile réseau sur le cœur 0 ; boucle ESPHome (JSY, régulation) sur le cœur 1 ;
+  depuis HA, anti-légionelle, marche forcée de secours si HA est injoignable.
+- Retiré : écran OLED, page web ESP-DASH, topics MQTT `mosquitto/...` ; relais Bluetooth retiré le 22/11 (routeur dédié au routage).
+- **Deux cœurs** : wifi et pile réseau sur le cœur 0 ; boucle ESPHome (JSY, régulation) sur le cœur 1 ;
   triacs pilotés par une interruption de minuterie matérielle.
 - Les marches forcées sont faites par des **automatisations Home Assistant** qui lisent les réglages de l'ESP.
 
@@ -25,9 +25,8 @@ Fichiers :
 - `pcb/` : carte mère KiCad générée par script, fichiers de fabrication JLCPCB (voir `pcb/README-pcb.md`).
 - `boitier/` : boîtier imprimé 3D OpenSCAD + STL (voir `boitier/README.md`).
 
-Compilé avec ESPHome 2026.10.2 le 21/11/2026, ESP32 avec 2 dimmers et relais
-Bluetooth : RAM 59,3 % (74 Ko sur 125), flash 72,5 % (1,33 Mo sur 1,75 Mo par partition OTA). Sans le Bluetooth :
-RAM 28 %, flash 49 %. Premier flash : *⋮ → Install → Manual download → Factory format* dans ESPHome, puis
+Compilé avec ESPHome 2026.10.2 le 21/11/2026, ESP32 avec 2 dimmers : avec le relais Bluetooth (retiré depuis),
+RAM 59,3 % et flash 72,5 % ; sans lui, environ RAM 28 % et flash 49 %. Premier flash : *⋮ → Install → Manual download → Factory format* dans ESPHome, puis
 `esptool --chip esp32 --port /dev/ttyUSB0 --baud 460800 write_flash 0x0 routeur-solaire.factory.bin`
 (esptool 4.x d'Ubuntu ; Firefox ne sait pas flasher en USB). Ensuite, mises à jour par le wifi.
 
@@ -97,7 +96,7 @@ RAM 28 %, flash 49 %. Premier flash : *⋮ → Install → Manual download → F
   - Contrôle : la nuit (aucune production), `Puissance réseau` doit être **positive** dans HA. Si elle est
     négative, retourner la pince.
 - **Alimentation** : chargeur USB 5 V d'au moins 1 A dans le micro-USB de l'ESP32 ; le 5 V et la masse des modules
-  sont repris sur ses broches VIN et GND (≈ 0,6 A en pointe : ESP32 avec wifi et Bluetooth, JSY, 2 relais).
+  sont repris sur ses broches VIN et GND (≈ 0,6 A en pointe : ESP32 avec wifi, JSY, 2 relais).
 - **Dimmer RobotDyn « AC Dimmer Module HL » 16/24 A 600 V** : logique VCC (3,3 V),
   GND, Z-C → D35, PWM → D32 (dimmer 2 : PWM → D33, Z-C libre). Puissance : AC-IN **L** et **N**, sortie **LOAD** vers la phase du ballon ; l'autre fil du
   ballon va directement au neutre. Avec un ballon de 8 A, la version 16 A est à l'aise (≈ 10 W dans le triac) ;
@@ -127,14 +126,13 @@ viser entre −30 et 0 W d'injection, avec la table de pas de la v9.15. De 0 à 
 au-delà, si « Sortie 2 active » est allumé, le dimmer 2 prend la suite jusqu'à 95 %. À la descente, le dimmer 2 baisse
 d'abord, puis le dimmer 1 : pas d'à-coup (la v9.15 remettait la sortie 2 à zéro dès que la 1 quittait son maximum).
 « Sortie 2 active » est éteint par défaut : ne l'allumer qu'avec une charge branchée sur le dimmer 2.
+Le JSY ne rafraîchit ses mesures que toutes les 330 ms : la consigne n'est corrigée que sur une trame nouvelle
+(la v9.15 appliquait le même pas 2 à 3 fois sur la même mesure). 5 s de trames identiques = JSY figé, traité comme muet
+(dimmer coupé). Wifi coupé : l'ESP ne redémarre jamais et continue de router seul.
 
 **Marche forcée de secours** : si HA est injoignable à l'heure réglée, l'ESP applique seul la règle « température »
 (chauffe si l'eau est sous la consigne, arrêt dès qu'elle l'atteint), avec l'heure de HA ou à défaut l'heure Internet
 (SNTP). Quand HA est là, l'ESP le laisse faire.
-
-**Relais Bluetooth** : les appareils Bluetooth à portée du routeur (capteurs de température, Victron…) apparaissent dans
-HA (*Paramètres → Appareils et services*, découverte automatique). Contrepartie : le wifi passe en économie d'énergie
-légère (radio partagée), sans effet sur la régulation, qui est locale.
 
 **Relais surplus** : collé quand surplus (injection + puissance du ballon) > « seuil marche », décollé sous
 « seuil arrêt », au moins 60 s entre deux changements. Les deux seuils se règlent dans HA (1000 / 800 W par défaut) :

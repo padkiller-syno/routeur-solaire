@@ -40,8 +40,14 @@ esp32:
   framework:
     type: arduino            # boucle ESPHome sur le cœur 1, wifi sur le cœur 0
 
-# Logs sur le port USB (UART0) et dans le tableau de bord ESPHome. Les réglages restent en mémoire (NVS).
+# Logs sur le port USB (UART0) et dans le tableau de bord ESPHome. Niveau INFO : pas une ligne par mesure publiée
+# (le niveau DEBUG en écrit des dizaines par minute, autant de temps pris à la boucle).
 logger:
+  level: INFO
+
+# Les réglages et l'énergie injectée restent en mémoire (NVS) ; écriture groupée toutes les 5 min pour ménager la flash.
+preferences:
+  flash_write_interval: 5min
 
 api:
   id: api_ha
@@ -56,15 +62,8 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  power_save_mode: light    # imposé par le Bluetooth (radio partagée) ; sans effet sur la régulation locale
-
-# Relais Bluetooth : HA voit les appareils Bluetooth à portée du routeur (capteurs, Victron…).
-esp32_ble_tracker:
-  scan_parameters:
-    active: true
-
-bluetooth_proxy:
-  active: true
+  power_save_mode: none     # radio toujours active : liaison HA la plus réactive (pas de Bluetooth)
+  reboot_timeout: 0s        # wifi coupé : l'ESP continue de router seul au lieu de redémarrer au bout de 15 min
 
 time:
   - platform: homeassistant
@@ -342,7 +341,7 @@ script:
           id(g_pause_jsy) = true;
           id(g_dim) = 0;
           id(dimmer_ballon).set_level(0);
-            id(dimmer_2).set_level(0);
+          id(dimmer_2).set_level(0);
           ESP_LOGW("routeur", "Réglage du JSY à 38 400 bauds : régulation suspendue");
       - delay: 300ms
       # même trame envoyée à 4 800 puis à 9 600 bauds (vitesses d'usine possibles)
@@ -411,7 +410,9 @@ interval:
                 id(g_mf_local) = true;
 
   # Cycle de 120 ms, comme la boucle de la v9.15 : on lit la réponse à la requête précédente,
-  # on renvoie une requête, puis on régule.
+  # on renvoie une requête, puis on régule. Le JSY ne rafraîchit ses mesures que toutes les 330 ms : une trame
+  # identique à la précédente n'est pas une nouvelle mesure, on ne corrige pas le dimmer (la v9.15 appliquait
+  # le même pas 2 à 3 fois de suite sur la même mesure, d'où des dépassements).
   - interval: 120ms
     then:
       - lambda: |-
@@ -427,7 +428,17 @@ interval:
           id(uart_jsy).write_array(JSY_REQUETE, sizeof(JSY_REQUETE));
 
           JsyMesure m;
-          const bool ok = jsy_decode(buf, n, &m) == JSY_OK;
+          bool ok = jsy_decode(buf, n, &m) == JSY_OK;
+          static uint8_t precedente[JSY_TRAME_LEN];
+          static uint16_t identiques = 0;
+          bool nouvelle = false;
+          if (ok) {
+            nouvelle = memcmp(buf, precedente, JSY_TRAME_LEN) != 0;
+            memcpy(precedente, buf, JSY_TRAME_LEN);
+            identiques = nouvelle ? 0 : (identiques < 1000 ? identiques + 1 : identiques);
+            // la tension varie toujours au 1/10 000 de volt : 5 s de trames identiques = JSY figé
+            if (identiques > 40) ok = false;
+          }
           if (ok) {
             id(g_err) = 0;
             id(g_p1) = m.puissance1;
@@ -462,7 +473,7 @@ interval:
             if (id(g_err) == 25) {
               id(g_dim) = 0;
               id(dimmer_ballon).set_level(0);
-            id(dimmer_2).set_level(0);
+              id(dimmer_2).set_level(0);
               ESP_LOGW("routeur", "JSY muet ou trames invalides : dimmer coupé");
             }
             return;
@@ -476,6 +487,8 @@ interval:
             id(dimmer_2).set_level(0);
             return;
           }
+
+          if (!nouvelle) return;   // même mesure que le cycle précédent : rien à corriger
 
           // Une seule consigne pour les deux sorties : le dimmer 1 (ballon) monte jusqu'au max, puis le dimmer 2
           // prend la suite (si « Sortie 2 » est active). Passage d'une sortie à l'autre sans à-coup, à la montée
