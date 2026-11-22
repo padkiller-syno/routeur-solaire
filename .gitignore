@@ -11,3 +11,7 @@ pcb/*.kicad_prl
 pcb/*-backups/
 pcb/fp-info-cache
 __pycache__/
+# Intermédiaires de routage de la carte v2 (branche pcb-v2)
+pcb-v2/*.dsn
+pcb-v2/*.ses
+pcb-v2/*.kicad_prl

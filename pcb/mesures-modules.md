@@ -1,6 +1,6 @@
 # Relevés des modules pour le PCB support (photos au pied à coulisse du 21-22/11/2026)
 
-Précision estimée ±0,5 mm (photos), à confirmer par une impression 1:1 avant commande JLCPCB.
+Précision estimée ±0,5 mm (photos) ; placement validé par une impression 1:1 le 22/11 avant la commande JLCPCB.
 Repère de chaque module : à plat, composants dessus.
 
 ## ESP32 DevKit V1 (clone 30 broches, sérigraphie « NodeMCU-ESP32 / ESP32 DEVKITV1 »)
@@ -36,27 +36,24 @@ Repère de chaque module : à plat, composants dessus.
   - J4 (5 pastilles, non équipé) et J2 (4 pastilles en bas, non équipé) : non utilisés.
 - Pas de trou de fixation (module prévu pour être soudé). Tore couché : le fil du ballon le traverse
   parallèlement au circuit.
-- Décision proposée : pas de trou métallisé sous J1 (découpe du PCB), fils secteur soudés sur J1 au-dessus,
-  entretoise isolante sous le bord opposé à J3.
+- Retenu : pas de cuivre sous J1 (encoche dans le PCB), fils secteur soudés sur J1 par-dessus ; le bord opposé à J3
+  repose sur la colonnette du boîtier, qui traverse le trou Ø 5 de la carte.
 - Le JSY rafraîchit ses mesures toutes les 330 ms (manuel).
 
-## Modules relais 10 A (photos du 22/11)
+## Modules relais 10 A
 
-- Module compact ≈ 43 × 17 mm, relais **TONGLING JQC-3FF-S-Z 24VDC** : **bobine 24 V**, ne colle pas en 5 V →
-  modules inutilisables tels quels avec l'alimentation 5 V.
-- Connecteur VCC / GND / IN côté LED, broches à 4 mm du bord ; bornier NO / COM / NC à l'autre bout ; pas de trou de
-  fixation visible.
-- Relais nus disponibles : **Songle SLA-12VDC-SL-C 30 A** (bobine 12 V) ; régulateurs L7805CV en stock.
-- **Décision en attente** : modules 5 V à acheter, ou alimentation 12 V.
+- Modules 5 V 1 canal à **déclenchement bas**, relais **Songle SRD-05VDC-SL-C** (achetés le 22/11), ≈ 43 × 17 mm.
+- Connecteur IN / GND / VCC côté LED, broches à ≈ 4 mm du bord ; bornier NO / COM / NC à l'autre bout ; pas de trou
+  de fixation. Enfichés dans K1 / K2 (barrettes femelles 1 × 3), bornier vers l'extérieur de la carte.
+- Commande par transistor (pas d'optocoupleur visible malgré l'annonce) : voir le piège du 3,3 V dans le README.
 
-## Sondes DS18B20 (décision user du 22/11)
+## Sondes DS18B20
 
-- **Plus d'adaptateur** : résistance de tirage 4,7 kΩ (DAT → 3,3 V) directement sur le PCB, une par bus
-  (ballon GPIO4, triacs GPIO27), + un **bornier à vis 3 points** par sonde (VCC 3,3 V, DAT, GND).
-- Ajouter un condensateur 100 nF entre VCC et GND près de chaque bornier (câbles de sonde longs).
+- Sans adaptateur : résistance de tirage 4,7 kΩ (DAT → 3,3 V) sur le PCB, une par bus (ballon GPIO4 → R3, triacs
+  GPIO27 → R4), un **bornier à vis 3 points** par sonde (J2, J3 : VCC 3,3 V, DAT, GND).
+- Condensateur 100 nF entre VCC et GND près de chaque bornier (C1, C2) pour les câbles de sonde longs.
 
 ## Ventilateur 5 V des dimmers
 
-- 40 × 40 mm, 2 fils (rouge / noir) terminés en Dupont femelles → 2 broches mâles au pas de 2,54 sur le PCB.
-
-- Connecteur 2 broches (5 V, GND) piloté par MOSFET sur GPIO13 (tout ou rien).
+- 40 × 40 mm, 2 fils (rouge / noir) terminés en Dupont femelles → J1, 2 broches mâles au pas de 2,54 (5 V, GND),
+  piloté par le MOSFET Q1 sur GPIO13 (tout ou rien).

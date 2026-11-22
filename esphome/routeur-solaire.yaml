@@ -1,4 +1,4 @@
-# Routeur solaire — ESP32 DevKit V1 (ESP-WROOM-32) + JSY-MK-194T + 1 dimmer + 2 relais + 2 DS18B20
+# Routeur solaire — ESP32 DevKit V1 (ESP-WROOM-32) + JSY-MK-194T + 2 dimmers + 2 relais + 2 DS18B20
 # D'après le routeur Profes'Solaire v9.15 (ESP32). Pas d'écran ni d'interface web : tout passe par Home Assistant.
 # La marche forcée (horaire, volume, température) est pilotée par des automatisations HA : voir ../README.md.
 #
@@ -11,7 +11,7 @@
 #   D32 GPIO32 → PWM du dimmer 1 (ballon)       D33 GPIO33 → PWM du dimmer 2 (2e charge, option)
 #   D25 GPIO25 → relais marche forcée (NC → bobine du contacteur du ballon)
 #   D26 GPIO26 → relais surplus
-#   D4  GPIO4  ↔ DS18B20 du ballon (adaptateur, 4,7 kΩ intégrée)
+#   D4  GPIO4  ↔ DS18B20 du ballon (bornier J2, tirage 4,7 kΩ sur la carte)
 #   D27 GPIO27 ↔ DS18B20 du radiateur des triacs (bus à part)
 #   D13 GPIO13 → MOSFET du ventilateur 5 V des dimmers (piloté par la température des triacs)
 
