@@ -4,10 +4,10 @@ NOTES-installation-locale.md
 .esphome/
 secrets.yaml
 # KiCad / Freerouting : fichiers intermédiaires
-pcb/*.dsn
-pcb/*.ses
-pcb/drc*.json
-pcb/*.kicad_prl
-pcb/*-backups/
-pcb/fp-info-cache
+pcb*/*.dsn
+pcb*/*.ses
+pcb*/drc*.json
+pcb*/*.kicad_prl
+pcb*/*-backups/
+pcb*/fp-info-cache
 __pycache__/
