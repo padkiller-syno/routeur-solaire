@@ -14,6 +14,8 @@ pcb_p = 124;          // profondeur carte (y)
 pcb_e = 1.6;          // épaisseur carte
 jeu = 2;              // jeu autour de la carte
 plot_h = 5;           // hauteur des plots sous la carte
+insert_d = 3.7;       // trou des inserts filetés M3 posés à chaud (inserts M3 × 3 mm, Ø ext. 4,0 / 3,7 mm)
+insert_l = 4;         // profondeur du trou d'insert (insert + 1 mm pour le plastique refoulé)
 module_h = 11;        // dessous des modules au-dessus de la carte (barrette femelle 8,5 + entretoise des broches)
 dimmer_h = 42;        // hauteur du dimmer avec radiateur
 ventilo = 40;         // ventilateur 40 × 40 × 10
@@ -50,8 +52,9 @@ trous_pcb = [[3.5, 3.5], [150.5, 3.5], [3.5, 120.5], [150.5, 120.5]];   // trous
 module plots() {
     for (t = trous_pcb) translate(concat(P(t[0], t[1]), [fond_e - 0.01]))
         difference() {
-            cylinder(d = 7, h = plot_h + 0.01);
-            cylinder(d = 2.6, h = plot_h + 1);    // vis M3 autotaraudeuse (ou insert : d = 4.0)
+            cylinder(d = 8, h = plot_h + 0.01);
+            translate([0, 0, plot_h - insert_l]) cylinder(d = insert_d, h = insert_l + 1);   // insert M3
+            cylinder(d = 3.2, h = plot_h + 1);    // dégagement de la vis M3 × 6 à travers la carte
         }
 }
 
@@ -71,7 +74,10 @@ module contour(h) {   // boîtier + colonnes d'angle accolées (union : les paro
     for (c = coins) translate([c[0], c[1], 0]) cylinder(d = colonne_d, h = h);
 }
 module trous_vis_couvercle() {
-    for (c = coins) translate([c[0], c[1], fond_e + int_h - 14]) cylinder(d = 2.6, h = 15);
+    for (c = coins) translate([c[0], c[1], fond_e + int_h]) {
+        translate([0, 0, -insert_l]) cylinder(d = insert_d, h = insert_l + 1);   // insert M3 en tête de colonne
+        translate([0, 0, -12]) cylinder(d = 3.2, h = 12);                       // dégagement de la vis M3 × 10
+    }
 }
 
 // pattes de fixation murale (vis Ø 4-5 mm)
@@ -108,6 +114,42 @@ module ouvertures() {
         cube([2, paroi * 4, 10], center = true);
 }
 
+// ------------------------------------------------------------------ alimentation 230 V → 5 V interne
+// Mean Well IRM-05-5 (33,7 × 22,2 × 15) posé sur une console accrochée à la paroi avant, au-dessus du relais avant.
+// Pattes vers le bas dans deux fentes : fils soudés et gainés sous la console, sortie 5 V soudée dans J4.
+// Porte-fusible de façade 5 × 20 (trou Ø 12,3) dans la paroi avant, à droite de la console (fusible T1A sur L).
+// Coordonnées en repère boîtier (communes aux boîtiers v1 et v2, mêmes dimensions intérieures).
+alim = [33.7, 22.2, 15];
+alim_jeu = 0.2;          // serré : une goutte de silicone neutre suffit à le bloquer
+alim_x0 = 98;            // bord gauche du logement (presse-étoupe avant v1 jusqu'à x 92,6)
+alim_z = 55;             // dessus de la console (dessous des goussets > haut des relais, z ≈ 39)
+console_e = 2.5;
+logement_h = 8;          // hauteur des rebords du logement
+fusible_x = 145;         // axe du porte-fusible
+fusible_z = 60;
+fusible_d = 12.3;
+
+module console_alim() {
+    lx = alim[0] + 2 * alim_jeu;
+    ly = alim[1] + 2 * alim_jeu;
+    r = 1.6;             // épaisseur des rebords
+    p = ly + r;          // profondeur de la console depuis la paroi avant
+    difference() {
+        union() {
+            translate([alim_x0 - r, paroi - 0.01, alim_z - console_e]) cube([lx + 2 * r, p, console_e + logement_h]);
+            // goussets à 45° (imprimables sans support), un de chaque côté
+            for (x = [alim_x0 - r - 2.9, alim_x0 + lx + r - 0.1]) translate([x, paroi - 0.01, alim_z - console_e + 0.01])
+                rotate([90, 0, 90]) linear_extrude(3) polygon([[0, 0], [p, 0], [0, -p]]);
+        }
+        translate([alim_x0, paroi - 0.02, alim_z]) cube([lx, ly + 0.02, logement_h + 1]);          // logement
+        for (x = [alim_x0 + 0.6, alim_x0 + lx - 0.6 - 6])                                         // fentes des pattes
+            translate([x, paroi + 1.5, alim_z - console_e - 1]) cube([6, ly - 3, console_e + 2]);
+    }
+}
+module trou_fusible() {
+    translate([fusible_x, paroi / 2, fusible_z]) rotate([90, 0, 0]) cylinder(d = fusible_d, h = paroi * 4, center = true);
+}
+
 module fond() {
     difference() {
         union() {
@@ -118,8 +160,10 @@ module fond() {
             plots();
             colonnette_jsy();
             pattes();
+            console_alim();
         }
         ouvertures();
+        trou_fusible();
         trous_vis_couvercle();
         // repères gravés au fond
         translate([ext_l / 2, 12, fond_e - 0.6]) linear_extrude(1)
@@ -168,11 +212,13 @@ module apercu_carte() {
     color("teal", 0.6) translate(concat(P(110, 67.5), [z_modules])) cube([36.6, 60.5, 27]);
     color("navy", 0.6) for (y0 = [92, 115]) translate(concat(P(108, y0), [z_modules])) cube([43, 17, 19]);
     color("royalblue", 0.6) translate(concat(P(3, 102.8), [z_dessus_pcb + 8.5])) cube([51.8, 28.2, 6]);
+    color("white", 0.9) translate([alim_x0 + alim_jeu, paroi + alim_jeu, alim_z]) cube(alim);
     color("black", 0.8) translate(concat(ventilo_c, [fond_e + int_h - ventilo_e])) translate([-20, -20, 0]) cube([40, 40, 10]);
 }
 
 if (part == "fond") fond();
 else if (part == "couvercle") couvercle();
+else if (part == "apercu") { fond(); apercu_carte(); }   // sans couvercle
 else {
     fond();
     apercu_carte();
