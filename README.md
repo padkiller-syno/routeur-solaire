@@ -5,7 +5,7 @@ Portage du routeur Profes'Solaire v9.15 (`esp32_oled_ac_v9_15.ino`) sur un **ESP
 ballon d'eau chaude, et garantir de l'eau chaude le soir.
 
 - Gardé : JSY-MK-194T, **2 dimmers** (même table de pas que la v9.15), relais surplus (sortie 3), relais de marche
-  forcée, sonde DS18B20 du ballon.
+  forcée, sonde DS18B20 du ballon (désormais déportée en 433 MHz, voir `sonde-433/`).
 - Ajouté : sonde DS18B20 de sécurité sur le radiateur des triacs, détection « ballon chaud », seuils du relais réglables
   depuis HA, anti-légionelle, marche forcée de secours si HA est injoignable.
 - Retiré : écran OLED, page web ESP-DASH, topics MQTT `mosquitto/...`, relais Bluetooth (routeur dédié au routage).
@@ -43,7 +43,7 @@ Compilé avec ESPHome 2026.10.2 : RAM ≈ 28 %, flash ≈ 49 %. Premier flash : 
 | PWM dimmer 2 (option) | D33 | 33 | 2e charge ; activer « Sortie 2 active » dans HA |
 | Relais marche forcée | D25 | 25 | NC → bobine du contacteur |
 | Relais surplus | D26 | 26 | |
-| DS18B20 ballon (DAT) | D4 | 4 | bornier J2, tirage 4,7 kΩ sur la carte |
+| Récepteur 433 MHz SRX882 (DATA) | D4 | 4 | bornier J2 ; reçoit la sonde déportée du ballon (`sonde-433/`) |
 | DS18B20 triacs (DAT) | D27 | 27 | bus séparé, bornier J3 |
 | Ventilateur 5 V des dimmers | D13 | 13 | MOSFET Q1 de la carte : marche au seuil (45 °C, réglable), arrêt 7 °C plus bas, forcé si la sonde des triacs se tait |
 
@@ -66,8 +66,12 @@ Compilé avec ESPHome 2026.10.2 : RAM ≈ 28 %, flash ≈ 49 %. Premier flash : 
   les mesures sont revenues. Le croquis reste utile sans ESPHome.
 - **JSY-MK-194T** : broches VCC, RX, TX, PF, GND (PF non branchée). Canal 1 = tore intégré, à faire traverser par le fil
   du ballon ; canal 2 = pince externe sur l'arrivée générale ; UL/NL = 230 V pour la mesure de tension.
-- **Sondes DS18B20** (VCC, DAT, GND) sur les borniers J2 et J3 de la carte, en 3,3 V : la résistance de tirage 4,7 kΩ
-  est sur la carte (R3, R4), ne pas en ajouter.
+- **Sonde DS18B20 des triacs** (VCC, DAT, GND) sur le bornier J3, en 3,3 V : la résistance de tirage 4,7 kΩ est sur la
+  carte (R4), ne pas en ajouter.
+- **Sonde du ballon déportée** : le routeur est près du tableau, à ~10 m du ballon, et 10 m de câble 1-Wire le long de
+  l'alimentation du ballon donnent des lectures fausses. Elle est lue sur place par un Pro Mini sur 18650 qui l'envoie en
+  433 MHz (`sonde-433/README.md`). Récepteur **SRX882** sur J2 : VCC → 3,3 V, DATA → DAT, GND, **CS → 3,3 V**, antenne
+  de 17,3 cm hors du tableau métallique. Entités `Batterie sonde ballon` et `Sonde ballon` (connectivité).
 - **Ballon : 8 A (≈ 1 850 W)**, circuit dédié au tableau : différentiel 30 mA → disjoncteur 16 A → câble 3G 2,5 mm²
   jusqu'au ballon. Raccordement par une sortie de câble puis les presse-étoupes du boîtier, **pas de prise** (une prise
   chauffe sous une charge résistive de plusieurs heures par jour).
@@ -165,7 +169,7 @@ signale le problème.
 - Pendant l'anti-légionelle, l'arrêt à 40 °C de la marche forcée température est suspendu.
 - Le max sur 7 jours vient de `sensor.ballon_temperature_max_7_jours` (intégration `statistics`, `configuration.yaml`).
   Juste après la mise en service, il n'a que quelques heures d'historique : un premier cycle à 60 °C est normal.
-- Sans sonde du ballon, ni marche forcée température ni anti-légionelle (la v9.15 lisait −127 °C et chauffait toutes
+- Sans sonde du ballon (aucune trame reçue depuis 5 min), ni marche forcée température ni anti-légionelle (la v9.15 lisait −127 °C et chauffait toutes
   les nuits).
 - Si HA redémarre pendant une marche forcée volume ou anti-légionelle, l'arrêt est perdu : la sécurité de 8 h de l'ESP coupe.
 

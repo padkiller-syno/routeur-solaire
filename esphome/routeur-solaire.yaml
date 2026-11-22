@@ -11,7 +11,7 @@
 #   D32 GPIO32 → PWM du dimmer 1 (ballon)       D33 GPIO33 → PWM du dimmer 2 (2e charge, option)
 #   D25 GPIO25 → relais marche forcée (NC → bobine du contacteur du ballon)
 #   D26 GPIO26 → relais surplus
-#   D4  GPIO4  ↔ DS18B20 du ballon (bornier J2, tirage 4,7 kΩ sur la carte)
+#   D4  GPIO4  ← récepteur 433 MHz SRX882 (bornier J2 : 3,3 V, DAT, GND) : sonde déportée du ballon (../sonde-433)
 #   D27 GPIO27 ↔ DS18B20 du radiateur des triacs (bus à part)
 #   D13 GPIO13 → MOSFET du ventilateur 5 V des dimmers (piloté par la température des triacs)
 
@@ -96,6 +96,45 @@ time:
                 - lambda: |-
                     if (id(g_e1_init_ok)) id(g_e1_init) = id(g_e1);
 
+# Sonde du ballon déportée (Pro Mini + DS18B20 + STX882 sur 18650, voir ../sonde-433/) : trame de 32 bits au
+# protocole 1 de rc-switch, toutes les ~60 s, répétée 5 fois. Réception directe, sans passer par HA.
+remote_receiver:
+  id: rx_433
+  pin: GPIO4               # sortie du SRX882 (tirage R3 de la carte sans effet gênant)
+  dump: []
+  tolerance: 30%
+  filter: 150us            # parasites du récepteur entre deux trames
+  idle: 5ms                # la synchro (31 × 350 µs) sépare les répétitions
+  buffer_size: 4kb
+  on_rc_switch:
+    - lambda: |-
+        if (x.protocol != 1 || (x.code >> 32) != 0) return;
+        const uint32_t c = (uint32_t) x.code;
+        if ((c >> 28) != 0xA) return;
+        uint8_t crc = 0;
+        for (int octet = 3; octet >= 1; octet--) {
+          crc ^= (uint8_t) (c >> (8 * octet));
+          for (int i = 0; i < 8; i++) crc = (crc & 0x80) ? (uint8_t) ((crc << 1) ^ 0x07) : (uint8_t) (crc << 1);
+        }
+        if (crc != (uint8_t) c) return;
+        static uint32_t derniere = 0;
+        static uint32_t t_derniere = 0;
+        const uint32_t maintenant = millis();
+        if (c == derniere && maintenant - t_derniere < 10000) return;  // répétition de la même trame
+        derniere = c;
+        t_derniere = maintenant;
+        id(g_sonde_t) = maintenant;
+        id(g_sonde_vue) = true;
+        const uint16_t tc = (c >> 17) & 0x7FF;
+        const uint8_t bc = (c >> 10) & 0x7F;
+        id(batterie_sonde).publish_state((2000 + bc * 20) / 1000.0f);
+        if (tc == 0x7FF) {
+          ESP_LOGW("routeur", "Sonde ballon : DS18B20 en défaut");
+          id(temp_ballon).publish_state(NAN);
+        } else {
+          id(temp_ballon).publish_state(tc / 10.0f - 20.0f);
+        }
+
 uart:
   id: uart_jsy
   tx_pin: GPIO17
@@ -104,9 +143,6 @@ uart:
   rx_buffer_size: 256
 
 one_wire:
-  - platform: gpio
-    id: bus_ballon
-    pin: GPIO4
   - platform: gpio
     id: bus_triac
     pin: GPIO27
@@ -128,6 +164,12 @@ output:
       allow_other_uses: true
 
 globals:
+  - id: g_sonde_t        # millis() de la dernière trame valide de la sonde du ballon
+    type: uint32_t
+    initial_value: '0'
+  - id: g_sonde_vue      # au moins une trame reçue depuis le démarrage
+    type: bool
+    initial_value: 'false'
   - id: g_conso          # puissance réseau (W) : > 0 soutirage, < 0 injection
     type: int
   - id: g_p1             # puissance envoyée au ballon (W)
@@ -380,6 +422,16 @@ script:
       - switch.turn_off: marche_forcee
 
 interval:
+  # Sonde du ballon muette depuis 5 min (5 trames perdues) : température inconnue. Le routage continue (le thermostat
+  # du ballon reste la limite) ; seule la marche forcée de secours sur température ne peut plus se déclencher.
+  - interval: 30s
+    then:
+      - lambda: |-
+          if (millis() - id(g_sonde_t) > 300000 && !isnan(id(temp_ballon).state)) {
+            ESP_LOGW("routeur", "Sonde ballon muette depuis 5 min");
+            id(temp_ballon).publish_state(NAN);
+          }
+
   # Sonde des triacs muette depuis 60 s : ventilateur forcé (le dimmer est déjà coupé par la sécurité).
   - interval: 10s
     then:
@@ -532,17 +584,31 @@ interval:
           }
 
 sensor:
-  - platform: dallas_temp
+  # publiée par remote_receiver (sonde déportée en 433 MHz) ; NAN après 5 min sans trame
+  - platform: template
     name: "Température ballon"
     id: temp_ballon
-    one_wire_id: bus_ballon
-    update_interval: 30s
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: never
     on_value:
       - lambda: |-
           if (id(g_mf_local) && !isnan(x) && x >= id(temperature_mf).state) {
             ESP_LOGI("routeur", "Marche forcée de secours terminée (%.1f °C)", x);
             id(marche_forcee).turn_off();
           }
+
+  - platform: template
+    name: "Batterie sonde ballon"
+    id: batterie_sonde
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    entity_category: diagnostic
+    accuracy_decimals: 2
+    update_interval: never
 
   - platform: dallas_temp
     name: "Température triac"
@@ -728,6 +794,11 @@ binary_sensor:
     name: "Ballon chaud"
     icon: mdi:water-boiler-alert
     lambda: return id(g_plein);
+
+  - platform: template
+    name: "Sonde ballon"
+    device_class: connectivity
+    lambda: return id(g_sonde_vue) && millis() - id(g_sonde_t) < 300000;
 
   - platform: template
     name: "Mesure JSY"

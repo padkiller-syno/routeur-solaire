@@ -48,7 +48,7 @@ de mise en route, les pièces et un petit coût par pièce étendue. Le devis s'
 | D1 | 1N4148W (SOD-123) | C81598 | roue libre du ventilateur |
 | R1 | 1 kΩ 0805 | C17513 | pont diviseur TX du JSY (à remplacer par un pont de soudure si TX en 3,3 V) |
 | R2 | 2 kΩ 0805 | C17604 | pont diviseur (à dessouder si TX en 3,3 V) |
-| R3, R4 | 4,7 kΩ 0805 | C17673 | tirage des sondes ballon (GPIO4) et triacs (GPIO27) |
+| R3, R4 | 4,7 kΩ 0805 | C17673 | tirage de J2 (GPIO4, récepteur 433 MHz de la sonde ballon) et de la sonde des triacs (GPIO27) |
 | C1, C2 | 100 nF 0805 | C49678 | près des borniers des sondes |
 | C3 | 470 µF 16 V CMS 8 × 10,5 | C2992615 | réserve du 5 V (bobines de relais) |
 | F1 | PTC 1,1 A 6 V (1206) | C2846895 | protection de J4 |
@@ -63,7 +63,7 @@ de mise en route, les pièces et un petit coût par pièce étendue. Le devis s'
 | M3 | 1 barrette femelle 1 × 5 | JSY (J3) ; L/N soudés en fils au-dessus de l'encoche ; colonnette du boîtier dans le trou Ø 5 |
 | K1, K2 | 2 barrettes femelles 1 × 3 | modules relais 5 V 10 A (SRD-05VDC), broches droites vers le bas |
 | J1 | barrette mâle 1 × 2 | ventilateur 40 mm 5 V (fils Dupont femelles) |
-| J2, J3 | 2 borniers à vis 3 points, pas 3,5 mm | sondes : VCC 3,3 V, DAT, GND |
+| J2, J3 | 2 borniers à vis 3 points, pas 3,5 mm | VCC 3,3 V, DAT, GND : J2 = récepteur 433 MHz SRX882 (CS sur VCC), J3 = sonde des triacs |
 | J4 | bornier débrochable 2 points, pas 3,5 mm | alimentation 5 V (+ / GND) depuis l'IRM-05-5 du boîtier |
 | H1–H4 | — | trous M3 de fixation dans le boîtier |
 
