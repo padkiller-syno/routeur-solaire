@@ -25,8 +25,8 @@ openscad -D 'part="couvercle"' -o couvercle.stl boitier.scad
 
 ## Ce qui est prévu
 
-- **4 plots** sous les trous M3 de la carte (Ø 2,6 → vis M3 autotaraudeuses ; pour des inserts filetés M3 à chaud,
-  passer le trou à 4,0 mm dans `plots()`).
+- **4 plots** sous les trous M3 de la carte, percés pour des **inserts filetés M3 posés à chaud** (trou Ø 3,7 pour des inserts M3 × 3 mm de Ø 4,0, réglable
+  par `insert_d` si les inserts serrent trop ou pas assez).
 - **Colonnette du JSY** : traverse le trou Ø 5 de la carte et soutient le JSY par-dessous (hauteur réglable
   via `module_h`).
 - **Passe-câbles** (presse-étoupes) : arrière 2 × M20 (dimmers) + 1 × M16 (JSY), droite 2 × M16 (relais),
@@ -35,20 +35,29 @@ openscad -D 'part="couvercle"' -o couvercle.stl boitier.scad
 - **Ventilateur 40 mm** vissé sous le couvercle (entraxe 32 mm), soufflant vers le bas entre les deux radiateurs ;
   grille d'aspiration dans le couvercle, **ouïes d'évacuation** de 2 mm (pas de doigt possible) en haut des parois
   arrière et gauche.
-- **Couvercle** vissé dans 4 colonnes d'angle (vis M3 × 16 à tête fraisée, autotaraudeuses dans Ø 2,6).
+- **Couvercle** vissé dans 4 colonnes d'angle, insert M3 en tête de chaque colonne (vis M3 × 10 à tête fraisée).
 - **4 pattes de fixation murale** (vis Ø 4-5 mm, tête fraisée).
+- **Alimentation 5 V interne** (option, à la place d'un chargeur USB) : console contre la paroi avant, au-dessus du relais
+  avant, pour un **Mean Well IRM-05-5** (5 V 1 A, classe II) posé pattes vers le bas dans deux fentes ; trou Ø 12,3 à côté
+  pour un **porte-fusible de façade 5 × 20** (fusible **T1A** temporisé sur la phase). Câblage : L/N pris sur l'arrivée du JSY
+  → fusible → IRM ; fils soudés sur les pattes et gainés (thermorétractable), sortie +5 V / GND soudée directement dans
+  les trous de **J4** (pas de bornier). Une goutte de silicone neutre bloque le module dans son logement.
 - Mention gravée au fond : « 230 V : ne pas ouvrir sous tension ».
 
 ## Visserie
 
+Pose des inserts : fer à souder vers 220-240 °C (PETG), insert bien droit, enfoncé jusqu'à affleurer sans forcer.
+
 | Usage | Quantité |
 |---|---|
-| Carte → plots : vis M3 × 8 autotaraudeuses (ou inserts M3 + vis M3 × 6) | 4 |
+| Inserts filetés M3 à chaud (M3 × 3 mm, Ø ext. 4,0 mm) : 4 plots + 4 colonnes (+ 1 plot du dimmer en v2) | 8 (9) |
+| Carte → plots : vis M3 × 6 | 4 |
 | Dimmers → carte : entretoises M3 (≈ 11 mm, à ajuster à la hauteur des barrettes) + vis M3 | 4 + 8 |
-| Couvercle : vis M3 × 16 tête fraisée | 4 |
+| Couvercle : vis M3 × 10 tête fraisée | 4 |
 | Ventilateur → couvercle : vis M3 × 14 + écrous (ou vis de ventilateur) | 4 |
 | Presse-étoupes M20 / M16 | 2 / 4 |
 | Fixation murale : vis Ø 4-5 + chevilles | 4 |
+| Option alimentation : Mean Well IRM-05-5, porte-fusible de façade 5 × 20 (250 V), fusible T1A 250 V | 1 + 1 + 1 |
 
 ## À vérifier au premier montage
 
