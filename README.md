@@ -2,15 +2,14 @@
 
 Portage du routeur Profes'Solaire v9.15 (`esp32_oled_ac_v9_15.ino`) sur un **ESP32 DevKit V1**
 (ESP-WROOM-32) sous **ESPHome**, relié à Home Assistant par l'API native. But : envoyer le surplus solaire dans le
-ballon d'eau chaude, et garantir de l'eau chaude le soir. (Une première version visait un Wemos D1 mini : abandonnée le
-21/11 pour l'ESP32, plus stable pour le dimmer.)
+ballon d'eau chaude, et garantir de l'eau chaude le soir.
 
 - Gardé : JSY-MK-194T, **2 dimmers** (même table de pas que la v9.15), relais surplus (sortie 3), relais de marche
   forcée, sonde DS18B20 du ballon.
 - Ajouté : sonde DS18B20 de sécurité sur le radiateur des triacs, détection « ballon chaud », seuils du relais réglables
-  depuis HA, anti-légionelle, marche forcée de secours si HA est injoignable, **relais Bluetooth** pour HA.
-- Retiré : écran OLED, page web ESP-DASH, topics MQTT `mosquitto/...`.
-- **Deux cœurs** : wifi, Bluetooth et pile réseau sur le cœur 0 ; boucle ESPHome (JSY, régulation) sur le cœur 1 ;
+  depuis HA, anti-légionelle, marche forcée de secours si HA est injoignable.
+- Retiré : écran OLED, page web ESP-DASH, topics MQTT `mosquitto/...`, relais Bluetooth (routeur dédié au routage).
+- **Deux cœurs** : wifi et pile réseau sur le cœur 0 ; boucle ESPHome (JSY, régulation) sur le cœur 1 ;
   triacs pilotés par une interruption de minuterie matérielle.
 - Les marches forcées sont faites par des **automatisations Home Assistant** qui lisent les réglages de l'ESP.
 
@@ -21,13 +20,11 @@ Fichiers :
 - `cablage.svg` : schéma de câblage basse tension (ESP, modules, 3,3 V / 5 V / masse).
 - `ha-carte-solaire-ecs.yaml` : carte pour la page « Solaire ECS » de HA (coller en carte « Manuel »).
 - `outils/vitesse_port_jsy.ino` : passage du JSY de 4 800 à 38 400 bauds (une seule fois, depuis un ESP32).
-- `puissance.svg` : schéma de la partie 230 V (tableau, coffret près du ballon, contacteur, dimmer, ballon).
+- `puissance.svg` : schéma de la partie 230 V (tableau, boîtier près du ballon, contacteur, dimmer, ballon).
 - `pcb/` : carte mère KiCad générée par script, fichiers de fabrication JLCPCB (voir `pcb/README-pcb.md`).
 - `boitier/` : boîtier imprimé 3D OpenSCAD + STL (voir `boitier/README.md`).
 
-Compilé avec ESPHome 2026.10.2 le 21/11/2026, ESP32 avec 2 dimmers et relais
-Bluetooth : RAM 59,3 % (74 Ko sur 125), flash 72,5 % (1,33 Mo sur 1,75 Mo par partition OTA). Sans le Bluetooth :
-RAM 28 %, flash 49 %. Premier flash : *⋮ → Install → Manual download → Factory format* dans ESPHome, puis
+Compilé avec ESPHome 2026.10.2 : RAM ≈ 28 %, flash ≈ 49 %. Premier flash : *⋮ → Install → Manual download → Factory format* dans ESPHome, puis
 `esptool --chip esp32 --port /dev/ttyUSB0 --baud 460800 write_flash 0x0 routeur-solaire.factory.bin`
 (esptool 4.x d'Ubuntu ; Firefox ne sait pas flasher en USB). Ensuite, mises à jour par le wifi.
 
@@ -39,23 +36,24 @@ RAM 28 %, flash 49 %. Premier flash : *⋮ → Install → Manual download → F
 
 | Signal | DevKit V1 | GPIO | Remarque |
 |---|---|---|---|
-| TX du JSY | RX2 | 16 | UART2 matérielle (pont diviseur si le JSY sort du 5 V) |
+| TX du JSY | RX2 | 16 | UART2 matérielle, pont diviseur R1/R2 sur la carte |
 | RX du JSY | TX2 | 17 | |
 | Z-C (dimmer 1) | D35 | 35 | entrée seule ; commun aux deux dimmers, Z-C du dimmer 2 non branché |
 | PWM dimmer 1 (ballon) | D32 | 32 | |
 | PWM dimmer 2 (option) | D33 | 33 | 2e charge ; activer « Sortie 2 active » dans HA |
 | Relais marche forcée | D25 | 25 | NC → bobine du contacteur |
 | Relais surplus | D26 | 26 | |
-| DS18B20 ballon (DAT) | D4 | 4 | adaptateur à bornier, 4,7 kΩ intégrée |
-| DS18B20 triacs (DAT) | D27 | 27 | bus séparé, adaptateur à bornier |
-| Ventilateur 5 V des dimmers | D13 | 13 | via un MOSFET (sur le futur PCB) : marche au seuil (45 °C, réglable), arrêt 7 °C plus bas, forcé si la sonde des triacs se tait |
+| DS18B20 ballon (DAT) | D4 | 4 | bornier J2, tirage 4,7 kΩ sur la carte |
+| DS18B20 triacs (DAT) | D27 | 27 | bus séparé, bornier J3 |
+| Ventilateur 5 V des dimmers | D13 | 13 | MOSFET Q1 de la carte : marche au seuil (45 °C, réglable), arrêt 7 °C plus bas, forcé si la sonde des triacs se tait |
 
 - Aucune broche de démarrage (0, 2, 5, 12, 15) n'est utilisée : rien ne s'active au boot ni pendant un flash USB.
 - Les logs passent par le port USB (UART0) et le tableau de bord ESPHome ; le JSY a sa propre UART.
 - La sonde des triacs a son propre fil : une panne sur un bus ne fait pas perdre l'autre sonde.
-- TX du JSY → RX2 par un pont diviseur 1 kΩ (en série) / 2 kΩ (vers la masse) **si le JSY sort du 5 V** (mesurer
-  son TX au repos) : 5 V × 2/3 = 3,3 V. S'il sort déjà du 3,3 V, fil direct.
-- 3,3 V (dimmers, sondes) pris sur la broche 3V3 ; relais et JSY en 5 V sur la broche VIN (reliée à l'USB) ; masse commune.
+- TX du JSY → RX2 par le pont diviseur de la carte, 1 kΩ (R1, en série) / 2 kΩ (R2, vers la masse) : 5 V × 2/3 = 3,3 V.
+  Si le TX du JSY sort déjà du 3,3 V (le mesurer au repos), remplacer R1 par un pont de soudure et retirer R2.
+- 5 V : alimentation Mean Well IRM-05-5 dans le boîtier → bornier J4 de la carte → VIN de l'ESP, JSY, relais, ventilateur.
+  3,3 V (dimmers, sondes) pris sur la broche 3V3 de l'ESP ; masse commune.
 
 ### Matériel
 
@@ -68,36 +66,43 @@ RAM 28 %, flash 49 %. Premier flash : *⋮ → Install → Manual download → F
   les mesures sont revenues. Le croquis reste utile sans ESPHome.
 - **JSY-MK-194T** : broches VCC, RX, TX, PF, GND (PF non branchée). Canal 1 = tore intégré, à faire traverser par le fil
   du ballon ; canal 2 = pince externe sur l'arrivée générale ; UL/NL = 230 V pour la mesure de tension.
-- **Adaptateurs DS18B20 à bornier** (DAT, VCC, GND) : la résistance de tirage 4,7 kΩ (« 472 ») est déjà sur la carte,
-  ne pas en ajouter. Les alimenter en 3,3 V pour que la ligne DAT reste à 3,3 V.
-- **Ballon : 8 A (≈ 1 850 W).**
-- **Relais : modules « Arduino » 10 A** (SRD-05VDC, bobine ≈ 70 mA en 5 V). Pas de relais nu sur l'ESP : il faudrait un
-  transistor, une diode de roue libre et une résistance, que le module contient déjà.
-  - Relais surplus : contact NO vers une charge annexe de 5 A au plus (au-delà, passer par un contacteur).
-  - Relais marche forcée : il ne coupe pas le ballon lui-même, il pilote la **bobine du contacteur HP/HC** par son
+- **Sondes DS18B20** (VCC, DAT, GND) sur les borniers J2 et J3 de la carte, en 3,3 V : la résistance de tirage 4,7 kΩ
+  est sur la carte (R3, R4), ne pas en ajouter.
+- **Ballon : 8 A (≈ 1 850 W)**, circuit dédié au tableau : différentiel 30 mA → disjoncteur 16 A → câble 3G 2,5 mm²
+  jusqu'au ballon. Raccordement par une sortie de câble puis les presse-étoupes du boîtier, **pas de prise** (une prise
+  chauffe sous une charge résistive de plusieurs heures par jour).
+- **Relais : modules 5 V 10 A à déclenchement bas** (Songle SRD-05VDC-SL-C, broches IN / GND / VCC, bobine ≈ 70 mA),
+  enfichés sur K1 (marche forcée) et K2 (surplus).
+  - Relais surplus : contact NO vers une charge annexe de 2 kW au plus (au-delà, passer par un contacteur).
+  - Relais marche forcée : il ne coupe pas le ballon lui-même, il pilote la **bobine du contacteur** par son
     contact **NC** : COM ← L, NC → A1 du contacteur, A2 → N. ESP éteint ou en panne = relais au repos = contacteur
     collé = ballon en direct sur son thermostat. En routage, la bobine du petit relais est alimentée en permanence.
-  - Réglages selon le déclenchement du module (`substitutions`) : déclenchement haut → `relais_surplus_inverse: "false"`,
-    `relais_mf_inverse: "true"` (valeurs par défaut) ; déclenchement bas → l'inverse.
-  - **Piège** : un module à déclenchement bas alimenté en 5 V peut ne jamais décoller avec les 3,3 V de l'ESP. S'il a un
-    cavalier JD-VCC : VCC (côté entrée) en 3,3 V, JD-VCC en 5 V. Sinon, préférer un module à déclenchement haut.
-- **Contacteur heures pleines/creuses** (contacteur modulaire, bobine 230 V, ≥ 20 A) : dans un petit coffret sur rail
-  DIN près du ballon, avec l'ESP. Son contact de puissance relie L à la phase du ballon, en parallèle de la sortie LOAD
-  du dimmer. Commutateur de façade (s'il en a un) sur **Auto** ; la position « marche forcée » reste un secours manuel.
-- **Pince du canal 2 (arrivée générale), rallongée jusqu'au tableau** — l'ESP et le JSY sont près du ballon :
-  - Câble : une paire torsadée, idéalement blindée (une paire d'un câble Ethernet cat. 5e/6 convient, ou 2 × 0,5 mm²
-    blindé). Une pince à sortie courant supporte sans souci 10 à 20 m. Blindage relié à la masse côté JSY seulement.
-  - Passage : séparé des câbles 230 V. Dans une gaine qui contient du 230 V, le câble doit être isolé pour 300/500 V
-    (un câble Ethernet ordinaire ne l'est pas).
-  - Raccord : souder et gainer (thermorétractable), ou bornier ; garder la fiche d'origine côté JSY.
+  - Réglages pour ces modules, à poser dans `substitutions` au montage : `relais_surplus_inverse: "true"`,
+    `relais_mf_inverse: "false"` (le fichier a encore les valeurs d'un module à déclenchement haut, l'inverse).
+  - **Piège** : alimentés en 5 V, ces modules peuvent ne pas décoller avec les 3,3 V de l'ESP (pour leur transistor,
+    3,3 V est encore un niveau bas). Test au banc avant montage : IN à la masse → le relais colle ; IN en l'air → il
+    doit décoller franchement. S'il reste collé avec la broche de l'ESP à 3,3 V : passer les sorties en `open_drain`,
+    ou souder une diode 1N4148 en série sur IN (cathode côté ESP).
+- **Contacteur jour/nuit AEG 666120** (20 A, 2 NO, bobine 230 V, commutateur 0 / AUTO / 1) : sur rail DIN près du
+  ballon. Son contact de puissance relie L à la phase du ballon, en parallèle de la sortie LOAD du dimmer : en marche
+  forcée, le triac est court-circuité. Commutateur sur **AUTO** ; **1** = marche forcée manuelle, même ESP en panne ;
+  **0** = ballon coupé.
+- **Pince du canal 2 (arrivée générale), rallongée jusqu'au tableau** — le boîtier est près du ballon :
+  - Câble : **H05VV-F 2 × 0,75 mm²** (isolé 300/500 V), torsadé à la main (un tour tous les 5 à 10 cm), ou sa version
+    blindée (blindage relié à la masse côté JSY seulement). Une pince à sortie courant supporte sans souci 10 à 20 m.
+  - Passage : dans la même gaine ICTA que le câble du ballon, ou fixé le long d'elle. Les fils de la pince sont reliés
+    au circuit de mesure du JSY, référencé au secteur : les traiter comme du 230 V (pas de câble Ethernet).
+  - Raccord : souder et gainer (thermorétractable), ou bornier dans une boîte ; garder la fiche d'origine côté JSY.
   - **Ne jamais laisser la pince fermée sur un câble sous tension avec ses fils débranchés** (secondaire de
     transformateur de courant ouvert = tension élevée, pince abîmée) : brancher d'abord la rallonge, puis clipser.
   - Pose : autour de la **phase seule** de l'arrivée générale, après le compteur et avant tous les départs.
     Flèche de la pince dans le sens compteur → maison.
   - Contrôle : la nuit (aucune production), `Puissance réseau` doit être **positive** dans HA. Si elle est
     négative, retourner la pince.
-- **Alimentation** : chargeur USB 5 V d'au moins 1 A dans le micro-USB de l'ESP32 ; le 5 V et la masse des modules
-  sont repris sur ses broches VIN et GND (≈ 0,6 A en pointe : ESP32 avec wifi et Bluetooth, JSY, 2 relais).
+- **Alimentation 5 V** : Mean Well IRM-05-5 (5 V 1 A, classe II) dans le boîtier, derrière un fusible **T1A** temporisé
+  sur la phase (porte-fusible de façade 250 V) ; le même fusible protège les fils L/N du JSY. Sortie sur J4 (bornier
+  débrochable 2 points, pas de 3,5 mm), protégée sur la carte par F1 (PTC 1,1 A) et D2. ≈ 0,6 A en pointe (ESP32 avec
+  wifi, JSY, 2 relais, ventilateur). Le micro-USB de l'ESP ne sert plus qu'au premier flash.
 - **Dimmer RobotDyn « AC Dimmer Module HL » 16/24 A 600 V** : logique VCC (3,3 V),
   GND, Z-C → D35, PWM → D32 (dimmer 2 : PWM → D33, Z-C libre). Puissance : AC-IN **L** et **N**, sortie **LOAD** vers la phase du ballon ; l'autre fil du
   ballon va directement au neutre. Avec un ballon de 8 A, la version 16 A est à l'aise (≈ 10 W dans le triac) ;
@@ -127,14 +132,13 @@ viser entre −30 et 0 W d'injection, avec la table de pas de la v9.15. De 0 à 
 au-delà, si « Sortie 2 active » est allumé, le dimmer 2 prend la suite jusqu'à 95 %. À la descente, le dimmer 2 baisse
 d'abord, puis le dimmer 1 : pas d'à-coup (la v9.15 remettait la sortie 2 à zéro dès que la 1 quittait son maximum).
 « Sortie 2 active » est éteint par défaut : ne l'allumer qu'avec une charge branchée sur le dimmer 2.
+Le JSY ne rafraîchit ses mesures que toutes les 330 ms : la consigne n'est corrigée que sur une trame nouvelle
+(la v9.15 appliquait le même pas 2 à 3 fois sur la même mesure). 5 s de trames identiques = JSY figé, traité comme muet
+(dimmer coupé). Wifi coupé : l'ESP ne redémarre jamais et continue de router seul.
 
 **Marche forcée de secours** : si HA est injoignable à l'heure réglée, l'ESP applique seul la règle « température »
 (chauffe si l'eau est sous la consigne, arrêt dès qu'elle l'atteint), avec l'heure de HA ou à défaut l'heure Internet
 (SNTP). Quand HA est là, l'ESP le laisse faire.
-
-**Relais Bluetooth** : les appareils Bluetooth à portée du routeur (capteurs de température, Victron…) apparaissent dans
-HA (*Paramètres → Appareils et services*, découverte automatique). Contrepartie : le wifi passe en économie d'énergie
-légère (radio partagée), sans effet sur la régulation, qui est locale.
 
 **Relais surplus** : collé quand surplus (injection + puissance du ballon) > « seuil marche », décollé sous
 « seuil arrêt », au moins 60 s entre deux changements. Les deux seuils se règlent dans HA (1000 / 800 W par défaut) :
@@ -219,3 +223,4 @@ tableau Énergie), `sensor.sdb_routeur_solaire_sortie_dimmer` (%), `sensor.sdb_r
 - « Ballon chaud » qui passe bien à « on » quand le thermostat coupe (ballon à 0 W, dimmer à 95 %).
 - Température du triac en plein soleil (8 A pendant des heures) : elle doit rester nettement sous 75 °C.
 - Relais marche forcée : ESP débranché → le contacteur colle ; ESP en routage → il décolle.
+- Relais à déclenchement bas : chacun décolle bien quand l'ESP relâche sa sortie (voir *Matériel*).

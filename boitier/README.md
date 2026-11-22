@@ -30,18 +30,18 @@ openscad -D 'part="couvercle"' -o couvercle.stl boitier.scad
 - **Colonnette du JSY** : traverse le trou Ø 5 de la carte et soutient le JSY par-dessous (hauteur réglable
   via `module_h`).
 - **Passe-câbles** (presse-étoupes) : arrière 2 × M20 (dimmers) + 1 × M16 (JSY), droite 2 × M16 (relais),
-  avant 1 × M16 (sondes, 5 V, pince du JSY) ; ou passe-fils caoutchouc de même diamètre.
-- **Accès micro-USB** de l'ESP32 sur la gauche, à la hauteur du DevKit enfiché.
+  avant 1 × M16 (sondes, pince du JSY) ; ou passe-fils caoutchouc de même diamètre.
+- **Accès micro-USB** de l'ESP32 sur la gauche, à la hauteur du DevKit enfiché (premier flash et dépannage).
 - **Ventilateur 40 mm** vissé sous le couvercle (entraxe 32 mm), soufflant vers le bas entre les deux radiateurs ;
   grille d'aspiration dans le couvercle, **ouïes d'évacuation** de 2 mm (pas de doigt possible) en haut des parois
   arrière et gauche.
 - **Couvercle** vissé dans 4 colonnes d'angle, insert M3 en tête de chaque colonne (vis M3 × 10 à tête fraisée).
 - **4 pattes de fixation murale** (vis Ø 4-5 mm, tête fraisée).
-- **Alimentation 5 V interne** (option, à la place d'un chargeur USB) : console contre la paroi avant, au-dessus du relais
-  avant, pour un **Mean Well IRM-05-5** (5 V 1 A, classe II) posé pattes vers le bas dans deux fentes ; trou Ø 12,3 à côté
-  pour un **porte-fusible de façade 5 × 20** (fusible **T1A** temporisé sur la phase). Câblage : L/N pris sur l'arrivée du JSY
-  → fusible → IRM ; fils soudés sur les pattes et gainés (thermorétractable), sortie +5 V / GND soudée directement dans
-  les trous de **J4** (pas de bornier). Une goutte de silicone neutre bloque le module dans son logement.
+- **Alimentation 5 V interne** : console contre la paroi avant, au-dessus du relais avant, pour un **Mean Well
+  IRM-05-5** (5 V 1 A, classe II) posé pattes vers le bas dans deux fentes ; trou Ø 12,3 à côté pour un
+  **porte-fusible de façade 5 × 20** (fusible **T1A** temporisé sur la phase). Câblage : L de l'arrivée → fusible → IRM
+  et bornes L/N du JSY ; fils soudés sur les pattes et gainés (thermorétractable), sortie +5 V / GND vers **J4** (fiche
+  débrochable). Une goutte de silicone neutre bloque le module dans son logement.
 - Mention gravée au fond : « 230 V : ne pas ouvrir sous tension ».
 
 ## Visserie
@@ -57,7 +57,7 @@ Pose des inserts : fer à souder vers 220-240 °C (PETG), insert bien droit, enf
 | Ventilateur → couvercle : vis M3 × 14 + écrous (ou vis de ventilateur) | 4 |
 | Presse-étoupes M20 / M16 | 2 / 4 |
 | Fixation murale : vis Ø 4-5 + chevilles | 4 |
-| Option alimentation : Mean Well IRM-05-5, porte-fusible de façade 5 × 20 (250 V), fusible T1A 250 V | 1 + 1 + 1 |
+| Alimentation : Mean Well IRM-05-5, porte-fusible de façade 5 × 20 (250 V), fusible T1A 250 V | 1 + 1 + 1 |
 
 ## À vérifier au premier montage
 

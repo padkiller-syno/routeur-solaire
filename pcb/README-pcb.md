@@ -17,7 +17,8 @@ Fichiers :
 - **`jlcpcb-cpl.csv`** : positions et orientations des composants CMS.
 
 État au 22/11/2026 : contrôle KiCad **0 erreur, 0 liaison manquante** (seules restent des remarques de sérigraphie).
-Plans de masse sur les deux faces, broches raccordées en plein.
+Plans de masse sur les deux faces, broches raccordées en plein. **Commandée le 22/11** : 5 cartes vert HASL, assemblage
+Economic face dessus.
 
 ## Commande JLCPCB (PCB + assemblage des CMS)
 
@@ -60,12 +61,16 @@ de mise en route, les pièces et un petit coût par pièce étendue. Le devis s'
 | U1 | 2 barrettes femelles 1 × 15, pas 2,54 | ESP32 DevKit V1 (rangées à 25,4 mm) |
 | M1, M2 | 2 barrettes femelles 1 × 4 + 4 entretoises M3 | dimmers, broches soudées vers le bas |
 | M3 | 1 barrette femelle 1 × 5 | JSY (J3) ; L/N soudés en fils au-dessus de l'encoche ; colonnette du boîtier dans le trou Ø 5 |
-| K1, K2 | 2 barrettes femelles 1 × 3 | relais 10 A, broches droites vers le bas |
+| K1, K2 | 2 barrettes femelles 1 × 3 | modules relais 5 V 10 A (SRD-05VDC), broches droites vers le bas |
 | J1 | barrette mâle 1 × 2 | ventilateur 40 mm 5 V (fils Dupont femelles) |
 | J2, J3 | 2 borniers à vis 3 points, pas 3,5 mm | sondes : VCC 3,3 V, DAT, GND |
-| J4 | bornier à vis 2 points, pas 3,5 mm | alimentation 5 V (+ / GND), à la place de l'USB |
+| J4 | bornier débrochable 2 points, pas 3,5 mm | alimentation 5 V (+ / GND) depuis l'IRM-05-5 du boîtier |
 | H1–H4 | — | trous M3 de fixation dans le boîtier |
 
-**À acheter à part** (non fournis par JLCPCB) : lot de barrettes femelles 2,54 mm (1 × 15 ×2, 1 × 4 ×2, 1 × 5, 1 × 3 ×2 :
-une barrette femelle se coupe mal, la prendre à la bonne longueur), barrette mâle 2,54 mm, borniers à vis **pas de 3,5 mm**
-(type KF350, pas les 5,08 mm courants) 3 points ×2 et 2 points ×1, entretoises M3 ≈ 11 mm.
+**Connecteurs achetés à part** (pour les 5 cartes) : kit de barrettes femelles 2,54 mm RUNCCI (1 × 4, 6, 8, 10, 12,
+16, 20, 40), barrette mâle 2,54 mm, borniers à vis **pas de 3,5 mm** 3 points (ZB350 / KF350) et borniers débrochables
+2 points au même pas pour J4, entretoises M3 ≈ 11 mm.
+
+Coupe des barrettes femelles : une coupe sacrifie une position. 1 × 15 = une 1 × 16 ou une 1 × 20 coupée (la 1 × 20
+laisse une 1 × 4) ; 1 × 4 telles quelles ; 1 × 5 et 1 × 3 dans les 1 × 6 (ou dans les restes de 1 × 4 pour les 1 × 3).
+Poncer la coupe au papier de verre.

@@ -17,7 +17,7 @@
   </style>
 
   <text x="520" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">Routeur solaire — câblage ESP32 DevKit V1 (ESPHome)</text>
-  <text x="520" y="56" text-anchor="middle" class="petit">Carte vue de dessus, antenne en haut, micro-USB en bas. 3,3 V depuis la broche 3V3, 5 V depuis VIN (alimentée par l'USB), masse commune.</text>
+  <text x="520" y="56" text-anchor="middle" class="petit">Carte vue de dessus, antenne en haut, micro-USB en bas. 3,3 V depuis la broche 3V3, 5 V sur VIN depuis J4 (IRM-05-5), masse commune.</text>
 
   <!-- ===================== ESP32 DevKit V1 ===================== -->
   <rect x="430" y="110" width="180" height="510" rx="8" style="fill:#e8f0fe;stroke:#444;stroke-width:1.5"/>
@@ -39,7 +39,7 @@
     <circle cx="430" cy="490" r="4" fill="#bbb"/><text x="440" y="494" class="libre">D12</text>
     <circle cx="430" cy="520" r="5" fill="#1e8449"/><text x="440" y="524" class="pin">D13</text>
     <circle cx="430" cy="550" r="4" fill="#bbb"/><text x="440" y="554" class="libre">GND</text>
-    <circle cx="430" cy="580" r="5" fill="#c0392b"/><text x="440" y="584" class="pin t5">VIN <tspan class="petit">(5 V USB)</tspan></text>
+    <circle cx="430" cy="580" r="5" fill="#c0392b"/><text x="440" y="584" class="pin t5">VIN <tspan class="petit">(5 V J4)</tspan></text>
   </g>
   <g text-anchor="end">
     <circle cx="610" cy="160" r="4" fill="#bbb"/><text x="600" y="164" class="libre">D23</text>
@@ -58,7 +58,7 @@
     <circle cx="610" cy="550" r="5" fill="#222"/><text x="600" y="554" class="pin">GND</text>
     <circle cx="610" cy="580" r="5" fill="#d6337a"/><text x="600" y="584" class="pin t33">3V3</text>
   </g>
-  <text x="520" y="638" text-anchor="middle" class="petit">micro-USB ← chargeur 5 V ≥ 1 A</text>
+  <text x="520" y="638" text-anchor="middle" class="petit">micro-USB : premier flash seulement</text>
 
   <!-- ===================== Dimmer 1 ===================== -->
   <rect x="60" y="230" width="220" height="100" rx="8" class="box"/>
@@ -94,7 +94,7 @@
   <text x="74" y="553" class="titre">Relais surplus</text>
   <text x="70" y="571" class="pin t5">VCC</text>
   <text x="70" y="591" class="pin">GND</text>
-  <text x="74" y="609" class="petit">COM/NO : charge annexe ≤ 5 A</text>
+  <text x="74" y="609" class="petit">COM/NO : charge annexe ≤ 2 kW</text>
   <text x="270" y="579" text-anchor="end" class="pin">IN</text>
   <path d="M430 400 H385 V575 H280" class="fil" stroke="#1e8449"/>
 
@@ -103,7 +103,7 @@
   <text x="74" y="648" class="titre">DS18B20 triacs</text>
   <text x="70" y="666" class="pin t33">VCC</text>
   <text x="70" y="686" class="pin">GND</text>
-  <text x="74" y="704" class="petit">adaptateur · sur le radiateur</text>
+  <text x="74" y="704" class="petit">bornier J3 · sur le radiateur</text>
   <text x="74" y="716" class="petit">coupure 75 °C, reprise 60 °C</text>
   <text x="270" y="678" text-anchor="end" class="pin">DAT</text>
   <path d="M430 430 H405 V674 H280" class="fil" stroke="#7d3c98"/>
@@ -137,7 +137,7 @@
   <!-- ===================== DS18B20 ballon ===================== -->
   <rect x="760" y="500" width="220" height="90" rx="8" class="box"/>
   <text x="774" y="518" class="titre">DS18B20 ballon</text>
-  <text x="774" y="532" class="petit">adaptateur, 4,7 kΩ intégrée</text>
+  <text x="774" y="532" class="petit">bornier J2, 4,7 kΩ sur la carte</text>
   <text x="770" y="544" class="pin">DAT</text>
   <text x="970" y="552" text-anchor="end" class="pin t33">VCC</text>
   <text x="970" y="576" text-anchor="end" class="pin">GND</text>
@@ -159,7 +159,7 @@
   <path d="M8 830 H1015" class="v5"/>
   <text x="230" y="770" text-anchor="middle" class="petit" fill="#d6337a">3,3 V (broche 3V3)</text>
   <text x="230" y="810" text-anchor="middle" class="petit" fill="#222">masse commune (GND)</text>
-  <text x="230" y="850" text-anchor="middle" class="petit" fill="#c0392b">+5 V (broche VIN = USB)</text>
+  <text x="230" y="850" text-anchor="middle" class="petit" fill="#c0392b">+5 V (J4 → VIN)</text>
 
   <!-- gauche : 3,3 V (x = 40), masse (x = 22, saute le 3,3 V), 5 V (x = 8, saute masse et 3,3 V) -->
   <path d="M40 750 V264 H60" class="v33"/>
@@ -198,9 +198,9 @@
   <!-- ===================== Remarques ===================== -->
   <rect x="40" y="950" width="960" height="140" fill="#fff8e6" stroke="#d4a017" stroke-width="1.5" rx="8"/>
   <text x="56" y="974" class="titre">À vérifier avant de brancher</text>
-  <text x="56" y="996">• Pont diviseur 1 kΩ / 2 kΩ : seulement si le TX du JSY sort du 5 V (le mesurer) ; sinon TX directement sur RX2 (GPIO16).</text>
-  <text x="56" y="1016">• 5 V : VIN est relié à l'USB ; chargeur ≥ 1 A (ESP32 + JSY + 2 relais ≈ 0,6 A en pointe). 3,3 V : dimmers + sondes &lt; 20 mA.</text>
+  <text x="56" y="996">• Pont diviseur R1 1 kΩ / R2 2 kΩ sur la carte : si le TX du JSY sort déjà du 3,3 V (le mesurer), shunter R1 et retirer R2.</text>
+  <text x="56" y="1016">• 5 V : IRM-05-5 sur J4, 1 A (ESP32 + JSY + 2 relais ≈ 0,6 A en pointe). 3,3 V : dimmers + sondes &lt; 20 mA.</text>
   <text x="56" y="1036">• Dimmer 2 : son Z-C reste libre, celui du dimmer 1 sert aux deux. La sonde « triacs » se colle sur le radiateur le plus chaud.</text>
   <text x="56" y="1056">• Broches de démarrage (0, 2, 5, 12, 15) laissées libres ; D35 est une entrée seule, parfaite pour le Z-C.</text>
-  <text x="56" y="1076">• Relais : vérifier le déclenchement (haut/bas) des modules. D13 → MOSFET du ventilateur 5 V des dimmers (tout ou rien, sur le PCB).</text>
+  <text x="56" y="1076">• Relais : modules à déclenchement bas (logique inversée, tester le décollage en 3,3 V). D13 → MOSFET du ventilateur 5 V des dimmers (tout ou rien, sur le PCB).</text>
 </svg>

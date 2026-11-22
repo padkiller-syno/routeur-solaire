@@ -2,7 +2,7 @@
 # Ajout : ouvrir la page → crayon « Modifier le tableau de bord » → « + Ajouter une carte » → tout en bas
 # « Manuel » → coller tout ce fichier → Enregistrer.
 # Uniquement des cartes intégrées à HA (rien à installer). Les noms d'entités sont ceux attendus une fois le
-# D1 mini ajouté dans HA ; si une carte affiche « Entité non disponible », corriger le nom dans l'éditeur.
+# routeur ajouté dans HA (préfixe sdb_routeur_solaire_) ; si une carte affiche « Entité non disponible », corriger le nom dans l'éditeur.
 type: vertical-stack
 cards:
   - type: heading
