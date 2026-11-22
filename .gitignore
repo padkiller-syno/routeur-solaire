@@ -1,0 +1,13 @@
+# Notes propres à l'installation locale
+NOTES-installation-locale.md
+# ESPHome : build et secrets
+.esphome/
+secrets.yaml
+# KiCad / Freerouting : fichiers intermédiaires
+pcb/*.dsn
+pcb/*.ses
+pcb/drc*.json
+pcb/*.kicad_prl
+pcb/*-backups/
+pcb/fp-info-cache
+__pycache__/

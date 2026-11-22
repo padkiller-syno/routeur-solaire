@@ -1,0 +1,693 @@
+# Routeur solaire — ESP32 DevKit V1 (ESP-WROOM-32) + JSY-MK-194T + 1 dimmer + 2 relais + 2 DS18B20
+# D'après le routeur Profes'Solaire v9.15 (ESP32). Pas d'écran ni d'interface web : tout passe par Home Assistant.
+# La marche forcée (horaire, volume, température) est pilotée par des automatisations HA : voir ../README.md.
+#
+# Deux cœurs (framework Arduino) : wifi + pile réseau sur le cœur 0, boucle ESPHome (JSY, régulation) sur le cœur 1,
+# triac piloté par une interruption de minuterie matérielle.
+#
+# Brochage (aucune broche de démarrage 0/2/5/12/15 utilisée) :
+#   RX2 GPIO16 ← TX du JSY      TX2 GPIO17 → RX du JSY     (UART2 matérielle ; UART0 = USB, logs)
+#   D35 GPIO35 ← Z-C des dimmers (entrée seule, commun aux deux)
+#   D32 GPIO32 → PWM du dimmer 1 (ballon)       D33 GPIO33 → PWM du dimmer 2 (2e charge, option)
+#   D25 GPIO25 → relais marche forcée (NC → bobine du contacteur du ballon)
+#   D26 GPIO26 → relais surplus
+#   D4  GPIO4  ↔ DS18B20 du ballon (adaptateur, 4,7 kΩ intégrée)
+#   D27 GPIO27 ↔ DS18B20 du radiateur des triacs (bus à part)
+#   D13 GPIO13 → MOSFET du ventilateur 5 V des dimmers (piloté par la température des triacs)
+
+# Seuils du relais surplus : réglables depuis HA (entités « Relais surplus : seuil marche/arrêt »).
+substitutions:
+  dimmer_max: "95"         # % maximum du dimmer
+  # Relais : modules 5 V. « déclenchement haut » = la bobine colle quand IN est à l'état haut.
+  # Relais surplus (contact NO) :            module à déclenchement haut → "false" ; bas → "true".
+  relais_surplus_inverse: "false"
+  # Relais marche forcée : bobine du contacteur du ballon sur le contact **NC** (ballon en direct si l'ESP est
+  # éteint). Marche forcée = bobine du relais au repos. Déclenchement haut → "true" ; bas → "false".
+  relais_mf_inverse: "true"
+  mf_duree_max: "8h"       # sécurité : arrêt de la marche forcée si HA ne l'a pas coupée
+  triac_coupure: "75"      # °C du radiateur du triac au-delà desquels le dimmer est coupé
+  triac_reprise: "60"      # °C en dessous desquels le routage reprend
+  ventilateur_ecart: "7"   # °C sous le seuil de marche pour arrêter le ventilateur
+
+esphome:
+  name: routeur-solaire
+  friendly_name: Routeur solaire
+  includes:
+    - routeur-solaire/routeur.h
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino            # boucle ESPHome sur le cœur 1, wifi sur le cœur 0
+
+# Logs sur le port USB (UART0) et dans le tableau de bord ESPHome. Les réglages restent en mémoire (NVS).
+logger:
+
+api:
+  id: api_ha
+  encryption:
+    key: !secret routeur_api_key
+  reboot_timeout: 0s       # ne pas redémarrer (et couper la régulation) si HA est arrêté
+
+ota:
+  - platform: esphome
+    password: !secret routeur_ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: light    # imposé par le Bluetooth (radio partagée) ; sans effet sur la régulation locale
+
+# Relais Bluetooth : HA voit les appareils Bluetooth à portée du routeur (capteurs, Victron…).
+esp32_ble_tracker:
+  scan_parameters:
+    active: true
+
+bluetooth_proxy:
+  active: true
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    on_time:
+      # remise à zéro de l'énergie routée du jour à 4h30, comme la v9.15
+      - seconds: 0
+        minutes: 30
+        hours: 4
+        then:
+          - lambda: |-
+              if (id(g_e1_init_ok)) id(g_e1_init) = id(g_e1);
+  # heure de secours si HA est injoignable (marche forcée de secours, remise à zéro de 4h30)
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/Paris
+    servers:
+      - fr.pool.ntp.org
+      - pool.ntp.org
+    on_time:
+      - seconds: 0
+        minutes: 30
+        hours: 4
+        then:
+          - if:
+              condition:
+                not:
+                  api.connected:
+              then:
+                - lambda: |-
+                    if (id(g_e1_init_ok)) id(g_e1_init) = id(g_e1);
+
+uart:
+  id: uart_jsy
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  baud_rate: 38400
+  rx_buffer_size: 256
+
+one_wire:
+  - platform: gpio
+    id: bus_ballon
+    pin: GPIO4
+  - platform: gpio
+    id: bus_triac
+    pin: GPIO27
+
+output:
+  - platform: ac_dimmer
+    id: dimmer_ballon
+    gate_pin: GPIO32
+    zero_cross_pin:
+      number: GPIO35
+      mode: INPUT
+      allow_other_uses: true
+  - platform: ac_dimmer
+    id: dimmer_2
+    gate_pin: GPIO33
+    zero_cross_pin:
+      number: GPIO35
+      mode: INPUT
+      allow_other_uses: true
+
+globals:
+  - id: g_conso          # puissance réseau (W) : > 0 soutirage, < 0 injection
+    type: int
+  - id: g_p1             # puissance envoyée au ballon (W)
+    type: int
+  - id: g_tension
+    type: float
+  - id: g_freq
+    type: float
+  - id: g_e1             # énergie routée totale (kWh, compteur du JSY)
+    type: float
+  - id: g_e2
+    type: float
+  - id: g_e2c
+    type: float
+  - id: g_e1_init        # g_e1 au début de la journée
+    type: float
+  - id: g_e1_init_ok
+    type: bool
+    initial_value: "false"
+  - id: g_dim            # consigne totale (%) : 0 → max = dimmer 1, max → 2 × max = dimmer 2 en plus
+    type: float
+    initial_value: "0"
+  - id: g_err            # trames JSY invalides consécutives
+    type: int
+    initial_value: "0"
+  - id: g_relais_t       # millis() du dernier changement du relais surplus
+    type: uint32_t
+    initial_value: "0"
+  - id: g_plein          # thermostat du ballon ouvert : dimmer au maximum mais le ballon ne prend rien
+    type: bool
+    initial_value: "false"
+  - id: g_plein_depuis   # millis() du début de la condition « ballon plein », 0 = pas en cours
+    type: uint32_t
+    initial_value: "0"
+  - id: g_mf_local       # marche forcée lancée par l'ESP lui-même (HA injoignable)
+    type: bool
+    initial_value: "false"
+  - id: g_mf_local_jour  # jour de l'année du dernier contrôle de secours
+    type: int
+    initial_value: "-1"
+  - id: g_pause_jsy      # vrai pendant le réglage de la vitesse du JSY : la boucle ne touche pas à l'UART
+    type: bool
+    initial_value: "false"
+  - id: g_triac_chaud    # vrai au démarrage : pas de routage avant une première mesure correcte du triac
+    type: bool
+    initial_value: "true"
+  - id: g_triac_t        # millis() de la dernière mesure valide du triac
+    type: uint32_t
+    initial_value: "0"
+
+switch:
+  # Seule commande exposée : HA l'allume/l'éteint (automatisations horaire/volume/température).
+  - platform: template
+    id: marche_forcee
+    name: "Marche forcée"
+    icon: mdi:water-boiler
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - script.execute: securite_mf
+    on_turn_off:
+      - script.stop: securite_mf
+      - lambda: id(g_mf_local) = false;
+
+  # 2e sortie (dimmer 2) : à activer seulement si une charge y est branchée.
+  - platform: template
+    id: sortie_2
+    name: "Sortie 2 active"
+    icon: mdi:numeric-2-box-outline
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_off:
+      - lambda: |-
+          if (id(g_dim) > ${dimmer_max}) id(g_dim) = ${dimmer_max};
+          id(dimmer_2).set_level(0);
+
+  # Réglages lus par les automatisations HA (équivalents des boutons « Horloge On/Off » de la v9.15).
+  - platform: template
+    id: prog_volume
+    name: "Programmation volume"
+    icon: mdi:clock-outline
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    id: prog_temperature
+    name: "Programmation température"
+    icon: mdi:thermometer-auto
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+
+  - platform: gpio
+    id: ventilateur
+    pin: GPIO13
+    restore_mode: ALWAYS_OFF
+    internal: true
+
+  - platform: gpio
+    id: relais_surplus
+    pin:
+      number: GPIO26
+      inverted: ${relais_surplus_inverse}
+    restore_mode: ALWAYS_OFF
+    internal: true
+
+  - platform: gpio
+    id: relais_mf
+    pin:
+      number: GPIO25
+      inverted: ${relais_mf_inverse}
+    restore_mode: ALWAYS_OFF
+    internal: true
+
+datetime:
+  - platform: template
+    id: heure_mf
+    type: time
+    name: "Heure marche forcée"
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: "16:00:00"
+
+number:
+  - platform: template
+    id: temperature_mf
+    name: "Température marche forcée"
+    icon: mdi:thermometer-water
+    entity_category: config
+    unit_of_measurement: "°C"
+    min_value: 10
+    max_value: 90
+    step: 5
+    initial_value: 40
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: seuil_ventilateur
+    name: "Ventilateur : seuil marche"
+    icon: mdi:fan
+    entity_category: config
+    unit_of_measurement: "°C"
+    min_value: 30
+    max_value: 70
+    step: 1
+    initial_value: 45
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: seuil_relais_on
+    name: "Relais surplus : seuil marche"
+    icon: mdi:transmission-tower-export
+    entity_category: config
+    unit_of_measurement: W
+    mode: box
+    min_value: 100
+    max_value: 5000
+    step: 50
+    initial_value: 1000
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: seuil_relais_off
+    name: "Relais surplus : seuil arrêt"
+    icon: mdi:transmission-tower-off
+    entity_category: config
+    unit_of_measurement: W
+    mode: box
+    min_value: 0
+    max_value: 5000
+    step: 50
+    initial_value: 800
+    optimistic: true
+    restore_value: true
+
+  - platform: template
+    id: volume_ballon
+    name: "Volume ballon"
+    icon: mdi:water-boiler
+    entity_category: config
+    unit_of_measurement: L
+    mode: box
+    min_value: 50
+    max_value: 500
+    step: 10
+    initial_value: 200
+    optimistic: true
+    restore_value: true
+
+button:
+  # Diagnostic, masqué par défaut : à n'utiliser qu'avec un JSY neuf ou remis à zéro (4 800 bauds), ou à 9 600 bauds.
+  - platform: template
+    name: "JSY : passer à 38 400 bauds"
+    icon: mdi:swap-horizontal
+    entity_category: diagnostic
+    disabled_by_default: true
+    on_press:
+      - script.execute: jsy_vitesse
+
+script:
+  - id: jsy_vitesse
+    mode: single
+    then:
+      - lambda: |-
+          id(g_pause_jsy) = true;
+          id(g_dim) = 0;
+          id(dimmer_ballon).set_level(0);
+            id(dimmer_2).set_level(0);
+          ESP_LOGW("routeur", "Réglage du JSY à 38 400 bauds : régulation suspendue");
+      - delay: 300ms
+      # même trame envoyée à 4 800 puis à 9 600 bauds (vitesses d'usine possibles)
+      - lambda: |-
+          id(uart_jsy).flush();
+          id(uart_jsy).set_baud_rate(4800);
+          id(uart_jsy).load_settings(false);
+          id(uart_jsy).write_array(JSY_TRAME_38400, sizeof(JSY_TRAME_38400));
+          id(uart_jsy).flush();
+      - delay: 500ms
+      - lambda: |-
+          id(uart_jsy).set_baud_rate(9600);
+          id(uart_jsy).load_settings(false);
+          id(uart_jsy).write_array(JSY_TRAME_38400, sizeof(JSY_TRAME_38400));
+          id(uart_jsy).flush();
+      - delay: 500ms
+      - lambda: |-
+          id(uart_jsy).set_baud_rate(38400);
+          id(uart_jsy).load_settings(false);
+          uint8_t octet;
+          while (id(uart_jsy).available()) id(uart_jsy).read_byte(&octet);
+          id(g_err) = 0;
+          id(g_pause_jsy) = false;
+      - delay: 5s
+      - lambda: |-
+          if (id(g_err) < 25) ESP_LOGI("routeur", "JSY : mesures reçues à 38 400 bauds");
+          else ESP_LOGW("routeur", "JSY toujours muet à 38 400 bauds : vérifier le câblage");
+
+  - id: securite_mf
+    mode: restart
+    then:
+      - delay: ${mf_duree_max}
+      - logger.log:
+          level: WARN
+          format: "Marche forcée coupée par la sécurité (${mf_duree_max})"
+      - switch.turn_off: marche_forcee
+
+interval:
+  # Sonde des triacs muette depuis 60 s : ventilateur forcé (le dimmer est déjà coupé par la sécurité).
+  - interval: 10s
+    then:
+      - lambda: |-
+          if (millis() - id(g_triac_t) > 60000 && !id(ventilateur).state) id(ventilateur).turn_on();
+
+  # Secours si HA est injoignable : même règle que l'automatisation « marche forcée température »
+  # (à l'heure réglée, chauffe si l'eau est sous la consigne, arrêt dès qu'elle l'atteint).
+  - interval: 20s
+    then:
+      - if:
+          condition:
+            not:
+              api.connected:
+          then:
+            - lambda: |-
+                auto t = id(ha_time).now();
+                if (!t.is_valid()) t = id(sntp_time).now();
+                if (!t.is_valid()) return;
+                if (t.hour != id(heure_mf).hour || t.minute != id(heure_mf).minute) return;
+                if (id(g_mf_local_jour) == t.day_of_year) return;
+                id(g_mf_local_jour) = t.day_of_year;
+                const float eau = id(temp_ballon).state;
+                if (!id(prog_temperature).state || isnan(eau) || eau >= id(temperature_mf).state) return;
+                if (id(marche_forcee).state) return;
+                ESP_LOGW("routeur", "HA injoignable : marche forcée de secours (eau à %.1f °C)", eau);
+                id(marche_forcee).turn_on();
+                id(g_mf_local) = true;
+
+  # Cycle de 120 ms, comme la boucle de la v9.15 : on lit la réponse à la requête précédente,
+  # on renvoie une requête, puis on régule.
+  - interval: 120ms
+    then:
+      - lambda: |-
+          if (id(g_pause_jsy)) return;
+          uint8_t buf[64];
+          size_t n = 0;
+          uint8_t octet;
+          while (id(uart_jsy).available() && n < sizeof(buf)) {
+            id(uart_jsy).read_byte(&buf[n]);
+            n++;
+          }
+          while (id(uart_jsy).available()) id(uart_jsy).read_byte(&octet);
+          id(uart_jsy).write_array(JSY_REQUETE, sizeof(JSY_REQUETE));
+
+          JsyMesure m;
+          const bool ok = jsy_decode(buf, n, &m) == JSY_OK;
+          if (ok) {
+            id(g_err) = 0;
+            id(g_p1) = m.puissance1;
+            id(g_conso) = (m.sens2 == 1) ? -m.puissance2 : m.puissance2;
+            id(g_tension) = m.tension;
+            id(g_freq) = m.frequence;
+            id(g_e1) = m.energie1;
+            id(g_e2) = m.energie2;
+            id(g_e2c) = m.energie2c;
+            if (!id(g_e1_init_ok)) {
+              id(g_e1_init) = m.energie1;
+              id(g_e1_init_ok) = true;
+            }
+          } else if (id(g_err) < 10000) {
+            id(g_err)++;
+          }
+
+          // Marche forcée : dimmer coupé, relais de marche forcée collé (indépendant du JSY).
+          if (id(marche_forcee).state) {
+            id(g_plein) = false;
+            id(g_plein_depuis) = 0;
+            id(g_dim) = 0;
+            id(dimmer_ballon).set_level(0);
+            id(dimmer_2).set_level(0);
+            if (!id(relais_mf).state) id(relais_mf).turn_on();
+            return;
+          }
+          if (id(relais_mf).state) id(relais_mf).turn_off();
+
+          if (!ok) {
+            // Plus de mesure depuis 3 s : on coupe le dimmer plutôt que de réguler à l'aveugle.
+            if (id(g_err) == 25) {
+              id(g_dim) = 0;
+              id(dimmer_ballon).set_level(0);
+            id(dimmer_2).set_level(0);
+              ESP_LOGW("routeur", "JSY muet ou trames invalides : dimmer coupé");
+            }
+            return;
+          }
+
+          // Sécurité triac : trop chaud, ou sonde muette depuis 60 s → dimmer coupé.
+          if (id(g_triac_chaud) || millis() - id(g_triac_t) > 60000) {
+            if (id(g_dim) > 0) ESP_LOGW("routeur", "Sécurité triac : dimmer coupé");
+            id(g_dim) = 0;
+            id(dimmer_ballon).set_level(0);
+            id(dimmer_2).set_level(0);
+            return;
+          }
+
+          // Une seule consigne pour les deux sorties : le dimmer 1 (ballon) monte jusqu'au max, puis le dimmer 2
+          // prend la suite (si « Sortie 2 » est active). Passage d'une sortie à l'autre sans à-coup, à la montée
+          // comme à la descente (la v9.15 remettait la sortie 2 à zéro dès que la 1 quittait son maximum).
+          const float d_max = id(sortie_2).state ? 2 * ${dimmer_max} : ${dimmer_max};
+          float d = id(g_dim) + pas_dimmer(id(g_conso));
+          if (d < 0) d = 0;
+          if (d > d_max) d = d_max;
+          id(g_dim) = d;
+          const float d1 = d > ${dimmer_max} ? ${dimmer_max} : d;
+          const float d2 = d > ${dimmer_max} ? d - ${dimmer_max} : 0;
+          id(dimmer_ballon).set_level(d1 / 100.0f);
+          id(dimmer_2).set_level(d2 / 100.0f);
+
+          const uint32_t maintenant = millis();
+
+          // Ballon plein : dimmer au maximum mais moins de 30 W dans le ballon pendant 60 s
+          // = thermostat ouvert. Levé dès que le ballon reprend plus de 100 W.
+          if (id(g_p1) > 100) {
+            id(g_plein) = false;
+            id(g_plein_depuis) = 0;
+          } else if (d1 >= ${dimmer_max} && id(g_p1) < 30) {
+            if (id(g_plein_depuis) == 0) id(g_plein_depuis) = maintenant | 1;
+            else if (maintenant - id(g_plein_depuis) > 60000) id(g_plein) = true;
+          } else {
+            id(g_plein_depuis) = 0;
+          }
+
+          // Relais surplus (sortie 3) : surplus = injection + puissance du ballon. Ballon plein, il ne
+          // reste que l'injection : le seuil de marche doit valoir à peu près la puissance de la charge
+          // branchée sur ce relais. Hystérésis et au moins 60 s entre deux changements.
+          const int surplus = -id(g_conso) + id(g_p1);
+          if (maintenant - id(g_relais_t) > 60000) {
+            if (!id(relais_surplus).state && surplus > id(seuil_relais_on).state) {
+              id(relais_surplus).turn_on();
+              id(g_relais_t) = maintenant;
+            } else if (id(relais_surplus).state && surplus < id(seuil_relais_off).state) {
+              id(relais_surplus).turn_off();
+              id(g_relais_t) = maintenant;
+            }
+          }
+
+sensor:
+  - platform: dallas_temp
+    name: "Température ballon"
+    id: temp_ballon
+    one_wire_id: bus_ballon
+    update_interval: 30s
+    on_value:
+      - lambda: |-
+          if (id(g_mf_local) && !isnan(x) && x >= id(temperature_mf).state) {
+            ESP_LOGI("routeur", "Marche forcée de secours terminée (%.1f °C)", x);
+            id(marche_forcee).turn_off();
+          }
+
+  - platform: dallas_temp
+    name: "Température triac"
+    id: temp_triac
+    one_wire_id: bus_triac
+    entity_category: diagnostic
+    update_interval: 10s
+    on_value:
+      - lambda: |-
+          if (isnan(x)) return;
+          id(g_triac_t) = millis();
+          // ventilateur : marche au seuil, arrêt 7 °C plus bas
+          const float v_on = id(seuil_ventilateur).state;
+          if (x >= v_on && !id(ventilateur).state) id(ventilateur).turn_on();
+          else if (x <= v_on - ${ventilateur_ecart} && id(ventilateur).state) id(ventilateur).turn_off();
+          if (x >= ${triac_coupure}) {
+            if (!id(g_triac_chaud)) ESP_LOGW("routeur", "Triac à %.1f °C : coupure", x);
+            id(g_triac_chaud) = true;
+          } else if (x <= ${triac_reprise}) {
+            id(g_triac_chaud) = false;
+          }
+
+  - platform: template
+    name: "Puissance réseau"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: |-
+      if (!id(g_e1_init_ok)) return NAN;
+      return id(g_conso);
+
+  - platform: template
+    name: "Puissance ballon"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: |-
+      if (!id(g_e1_init_ok)) return NAN;
+      return id(g_p1);
+
+  - platform: template
+    name: "Sortie dimmer"
+    unit_of_measurement: "%"
+    icon: mdi:sine-wave
+    accuracy_decimals: 1
+    update_interval: 5s
+    lambda: |-
+      return id(g_dim) > ${dimmer_max} ? ${dimmer_max} : id(g_dim);
+
+  - platform: template
+    name: "Sortie dimmer 2"
+    unit_of_measurement: "%"
+    icon: mdi:sine-wave
+    accuracy_decimals: 1
+    update_interval: 5s
+    lambda: |-
+      return id(g_dim) > ${dimmer_max} ? id(g_dim) - ${dimmer_max} : 0;
+
+  - platform: template
+    name: "Tension"
+    unit_of_measurement: V
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: |-
+      if (!id(g_e1_init_ok)) return NAN;
+      return id(g_tension);
+
+  - platform: template
+    name: "Fréquence"
+    unit_of_measurement: Hz
+    device_class: frequency
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: |-
+      if (!id(g_e1_init_ok)) return NAN;
+      return id(g_freq);
+
+  - platform: template
+    name: "Énergie routée"
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    update_interval: 60s
+    lambda: |-
+      if (!id(g_e1_init_ok)) return NAN;
+      return id(g_e1);
+
+  - platform: template
+    name: "Énergie routée aujourd'hui"
+    id: energie_jour
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    update_interval: 60s
+    lambda: |-
+      if (!id(g_e1_init_ok)) return NAN;
+      return id(g_e1) - id(g_e1_init);
+
+  - platform: template
+    name: "Énergie réseau canal 2"
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    update_interval: 60s
+    lambda: |-
+      if (!id(g_e1_init_ok)) return NAN;
+      return id(g_e2);
+
+  - platform: template
+    name: "Énergie réseau canal 2 consommée"
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    update_interval: 60s
+    lambda: |-
+      if (!id(g_e1_init_ok)) return NAN;
+      return id(g_e2c);
+
+  - platform: wifi_signal
+    name: "Signal wifi"
+    update_interval: 120s
+
+binary_sensor:
+  - platform: template
+    name: "Relais surplus"
+    lambda: return id(relais_surplus).state;
+
+  - platform: template
+    name: "Relais marche forcée"
+    lambda: return id(relais_mf).state;
+
+  - platform: template
+    name: "Sécurité triac"
+    device_class: problem
+    lambda: return id(g_triac_chaud) || millis() - id(g_triac_t) > 60000;
+
+  - platform: template
+    name: "Ventilateur"
+    icon: mdi:fan
+    lambda: return id(ventilateur).state;
+
+  - platform: template
+    name: "Ballon chaud"
+    icon: mdi:water-boiler-alert
+    lambda: return id(g_plein);
+
+  - platform: template
+    name: "Mesure JSY"
+    device_class: connectivity
+    lambda: return id(g_err) < 25;

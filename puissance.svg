@@ -1,0 +1,194 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 930" width="1240" height="930" font-family="DejaVu Sans, Arial, sans-serif" font-size="13">
+  <rect width="1240" height="930" fill="#ffffff"/>
+  <style>
+    .box { fill: #f6f7f9; stroke: #444; stroke-width: 1.5; }
+    .zone { fill: none; stroke: #999; stroke-width: 1.5; stroke-dasharray: 8 5; }
+    .titre { font-weight: bold; font-size: 14px; fill: #222; }
+    .t12 { font-weight: bold; font-size: 12px; fill: #222; }
+    .petit { font-size: 11px; fill: #555; }
+    .pin { font-size: 11px; font-weight: bold; fill: #222; }
+    .L { fill: none; stroke: #8b4513; stroke-width: 3; stroke-linejoin: round; }
+    .N { fill: none; stroke: #1f6fd1; stroke-width: 3; stroke-linejoin: round; }
+    .PE { fill: none; stroke: #3a9d23; stroke-width: 3; stroke-dasharray: 12 6; }
+    .sig { fill: none; stroke: #777; stroke-width: 2; stroke-dasharray: 5 3; stroke-linejoin: round; }
+  </style>
+
+  <text x="620" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">Routeur solaire — partie puissance 230 V</text>
+  <text x="620" y="56" text-anchor="middle" class="petit">Ballon 8 A. Couper le disjoncteur 20 A du ballon avant toute intervention dans le coffret.</text>
+
+  <!-- ===================== Tableau ===================== -->
+  <rect x="20" y="90" width="450" height="610" rx="10" class="zone"/>
+  <text x="34" y="112" class="titre">Tableau électrique</text>
+
+  <text x="22" y="194" class="pin" fill="#8b4513">L</text>
+  <text x="22" y="236" class="pin" fill="#1f6fd1">N</text>
+  <!-- rails L / N dans le tableau -->
+  <path d="M30 200 H540" class="L"/>
+  <path d="M30 240 H540" class="N"/>
+
+  <rect x="40" y="170" width="70" height="100" rx="6" class="box"/>
+  <text x="75" y="215" text-anchor="middle" class="t12">Linky</text>
+  <text x="75" y="231" text-anchor="middle" class="petit">compteur</text>
+
+  <rect x="135" y="170" width="70" height="100" rx="6" class="box"/>
+  <text x="170" y="208" text-anchor="middle" class="t12">AGCP</text>
+  <text x="170" y="224" text-anchor="middle" class="petit">disjoncteur</text>
+  <text x="170" y="237" text-anchor="middle" class="petit">de branchement</text>
+
+  <!-- pince canal 2 -->
+  <circle cx="245" cy="200" r="13" fill="none" stroke="#555" stroke-width="2.5"/>
+  <polygon points="252,184 262,188 252,192" fill="#555"/>
+  <text x="245" y="160" text-anchor="middle" class="pin">pince JSY</text>
+  <text x="245" y="173" text-anchor="middle" class="petit">canal 2 →</text>
+
+  <rect x="280" y="170" width="70" height="100" rx="6" class="box"/>
+  <text x="315" y="208" text-anchor="middle" class="t12">ID</text>
+  <text x="315" y="224" text-anchor="middle" class="petit">différentiel</text>
+  <text x="315" y="237" text-anchor="middle" class="petit">30 mA</text>
+
+  <!-- autres circuits -->
+  <path d="M362 200 V300" class="L" stroke-width="2"/>
+  <path d="M368 240 V300" class="N" stroke-width="2"/>
+  <circle cx="362" cy="200" r="3.5" fill="#8b4513"/>
+  <circle cx="368" cy="240" r="3.5" fill="#1f6fd1"/>
+  <text x="365" y="318" text-anchor="middle" class="petit">autres circuits</text>
+
+  <rect x="385" y="170" width="70" height="100" rx="6" class="box"/>
+  <text x="420" y="208" text-anchor="middle" class="t12">20 A</text>
+  <text x="420" y="224" text-anchor="middle" class="petit">disjoncteur</text>
+  <text x="420" y="237" text-anchor="middle" class="petit">ballon</text>
+
+  <text x="105" y="664" class="petit">barrette de terre</text>
+  <circle cx="90" cy="680" r="5" fill="#3a9d23"/>
+
+  <text x="495" y="160" text-anchor="middle" class="petit">câble 3G 2,5 mm²</text>
+
+  <!-- ===================== Coffret ===================== -->
+  <rect x="520" y="90" width="560" height="610" rx="10" class="zone"/>
+  <text x="534" y="112" class="titre">Coffret près du ballon (rail DIN)</text>
+  <text x="534" y="128" class="petit">avec l'ESP32 (schéma basse tension à part)</text>
+
+  <!-- rail L du coffret -->
+  <path d="M540 200 H990" class="L"/>
+  <!-- rail N du coffret : descend en bas -->
+  <path d="M540 240 H545 V620 H1110" class="N"/>
+
+  <!-- disjoncteur auxiliaires 2 A -->
+  <rect x="555" y="250" width="56" height="50" rx="6" class="box"/>
+  <text x="583" y="272" text-anchor="middle" class="t12">2 A</text>
+  <text x="583" y="288" text-anchor="middle" class="petit">1P+N</text>
+  <path d="M583 200 V250" class="L"/>
+  <circle cx="583" cy="200" r="3.5" fill="#8b4513"/>
+  <path d="M583 300 V320 H810" class="L" stroke-width="2"/>
+  <text x="700" y="314" text-anchor="middle" class="petit" fill="#8b4513">L auxiliaires (après 2 A)</text>
+
+  <!-- JSY -->
+  <rect x="615" y="350" width="80" height="70" rx="6" class="box"/>
+  <text x="655" y="372" text-anchor="middle" class="t12">JSY</text>
+  <text x="655" y="386" text-anchor="middle" class="petit">mesure U</text>
+  <text x="621" y="345" class="pin" fill="#8b4513" font-size="10">UL</text>
+  <text x="670" y="414" class="pin" fill="#1f6fd1" font-size="10">NL</text>
+  <text x="621" y="414" class="pin" fill="#555" font-size="10">CT2</text>
+  <path d="M633 320 V350" class="L" stroke-width="2"/>
+  <circle cx="633" cy="320" r="3" fill="#8b4513"/>
+  <path d="M680 420 V620" class="N" stroke-width="2"/>
+  <circle cx="680" cy="620" r="3" fill="#1f6fd1"/>
+
+  <!-- chargeur USB -->
+  <rect x="705" y="350" width="80" height="70" rx="6" class="box"/>
+  <text x="745" y="372" text-anchor="middle" class="t12">Chargeur</text>
+  <text x="745" y="386" text-anchor="middle" class="petit">USB 5 V ≥ 1 A</text>
+  <text x="745" y="400" text-anchor="middle" class="petit">→ ESP32</text>
+  <path d="M720 320 V350" class="L" stroke-width="2"/>
+  <circle cx="720" cy="320" r="3" fill="#8b4513"/>
+  <path d="M770 420 V620" class="N" stroke-width="2"/>
+  <circle cx="770" cy="620" r="3" fill="#1f6fd1"/>
+
+  <!-- relais marche forcée (module) -->
+  <rect x="790" y="340" width="90" height="70" rx="6" class="box"/>
+  <text x="835" y="360" text-anchor="middle" class="t12">Relais MF</text>
+  <text x="835" y="374" text-anchor="middle" class="petit">module 10 A</text>
+  <text x="798" y="404" class="pin" font-size="10">COM</text>
+  <text x="872" y="404" text-anchor="end" class="pin" font-size="10">NC</text>
+  <path d="M810 320 V340" class="L" stroke-width="2"/>
+  <path d="M860 410 V450" class="L" stroke-width="2"/>
+  <text x="866" y="436" class="petit">NC</text>
+
+  <!-- contacteur HP/HC -->
+  <rect x="790" y="450" width="150" height="90" rx="6" class="box"/>
+  <text x="865" y="470" text-anchor="middle" class="t12">Contacteur HP/HC</text>
+  <text x="865" y="484" text-anchor="middle" class="petit">20/25 A · bobine 230 V</text>
+  <text x="852" y="503" text-anchor="end" class="pin" font-size="10">A1</text>
+  <text x="852" y="532" text-anchor="end" class="pin" font-size="10">A2</text>
+  <rect x="855" y="505" width="14" height="22" fill="#fff" stroke="#444"/>
+  <path d="M862 450 V505" stroke="#8b4513" stroke-width="2"/>
+  <path d="M862 527 V540" stroke="#1f6fd1" stroke-width="2"/>
+  <path d="M862 540 V620" class="N" stroke-width="2"/>
+  <circle cx="862" cy="620" r="3" fill="#1f6fd1"/>
+  <text x="918" y="503" text-anchor="end" class="pin" font-size="10">1</text>
+  <text x="918" y="532" text-anchor="end" class="pin" font-size="10">2</text>
+  <path d="M925 500 L925 512 M925 512 L935 524 M925 528 V540" stroke="#444" stroke-width="2" fill="none"/>
+  <path d="M925 200 V500" class="L"/>
+  <circle cx="925" cy="200" r="3.5" fill="#8b4513"/>
+  <path d="M925 540 V570" class="L"/>
+
+  <!-- dimmer -->
+  <rect x="955" y="250" width="90" height="80" rx="6" class="box"/>
+  <text x="1000" y="272" text-anchor="middle" class="t12">Dimmer</text>
+  <text x="1000" y="286" text-anchor="middle" class="petit">RobotDyn HL</text>
+  <text x="975" y="262" text-anchor="middle" class="pin" fill="#8b4513" font-size="10">L</text>
+  <text x="1036" y="324" text-anchor="end" class="pin" font-size="10">LOAD</text>
+  <text x="962" y="324" class="pin" fill="#1f6fd1" font-size="10">N</text>
+  <path d="M975 200 V250" class="L"/>
+  <path d="M990 200 H975" class="L"/>
+  <path d="M1015 330 V570" class="L"/>
+  <!-- N du dimmer : saute la phase du ballon -->
+  <path d="M968 330 V564 A6 6 0 0 1 968 576 V620" class="N" stroke-width="2"/>
+  <circle cx="968" cy="620" r="3" fill="#1f6fd1"/>
+
+  <!-- phase du ballon : contacteur + LOAD, puis tore du JSY -->
+  <path d="M925 570 H1170" class="L"/>
+  <circle cx="1015" cy="570" r="3.5" fill="#8b4513"/>
+  <circle cx="1048" cy="570" r="13" fill="none" stroke="#555" stroke-width="2.5"/>
+  <text x="1050" y="546" text-anchor="middle" class="pin">tore JSY</text>
+  <text x="1050" y="600" text-anchor="middle" class="petit">canal 1</text>
+  
+  <!-- relais surplus : option -->
+  <text x="534" y="648" class="petit">Options (relais surplus, dimmer 2) : leur charge sur un départ à part, protégé pour elle ;</text>
+  <text x="534" y="662" class="petit">dimmer 2 câblé comme le dimmer 1 (L, N, LOAD → 2e charge) ; relais surplus ≤ 5 A.</text>
+
+  <!-- ===================== Ballon ===================== -->
+  <rect x="1110" y="430" width="110" height="220" rx="12" class="box"/>
+  <text x="1165" y="456" text-anchor="middle" class="titre">Ballon</text>
+  <text x="1165" y="474" text-anchor="middle" class="petit">8 A, ≈ 1 850 W</text>
+  <text x="1165" y="500" text-anchor="middle" class="petit">thermostat</text>
+  <text x="1165" y="514" text-anchor="middle" class="petit">+ résistance</text>
+  <text x="1120" y="566" class="pin" fill="#8b4513" font-size="10">L</text>
+  <text x="1120" y="616" class="pin" fill="#1f6fd1" font-size="10">N</text>
+  <text x="1165" y="644" text-anchor="middle" class="pin" fill="#3a9d23" font-size="10">PE</text>
+
+  <!-- terre -->
+  <path d="M90 680 H1165 V650" class="PE"/>
+
+  <!-- fil de la pince : du tableau au JSY (saute N, PE) -->
+  <path d="M245 213 V234 A6 6 0 0 1 245 246 V674 A6 6 0 0 1 245 686 V740 H655 V686 A6 6 0 0 1 655 674 V626 A6 6 0 0 1 655 614 V420" class="sig"/>
+  <text x="450" y="756" text-anchor="middle" class="petit">rallonge de la pince : paire torsadée blindée, à l'écart du 230 V</text>
+
+  <!-- ===================== Légende ===================== -->
+  <g transform="translate(40,785)">
+    <text x="0" y="0" class="titre">Légende</text>
+    <path d="M0 18 H34" class="L"/><text x="42" y="22">phase (L)</text>
+    <path d="M140 18 H174" class="N"/><text x="182" y="22">neutre (N)</text>
+    <path d="M290 18 H324" class="PE"/><text x="332" y="22">terre (PE)</text>
+    <path d="M430 18 H464" class="sig"/><text x="472" y="22">fil de mesure (basse tension)</text>
+    <circle cx="700" cy="18" r="10" fill="none" stroke="#555" stroke-width="2.5"/><text x="718" y="22">capteur de courant</text>
+    <circle cx="860" cy="18" r="4" fill="#8b4513"/><text x="870" y="22">point = connexion, saut = croisement</text>
+  </g>
+
+  <!-- ===================== Remarques ===================== -->
+  <rect x="40" y="825" width="1160" height="96" fill="#fff8e6" stroke="#d4a017" stroke-width="1.5" rx="8"/>
+  <text x="56" y="846">• Disjoncteur 2 A (1P+N) dans le coffret : il protège les petits fils (JSY, chargeur, bobine du contacteur), que le 20 A ne protège pas.</text>
+  <text x="56" y="866">• Pince canal 2 : phase seule, après l'AGCP et avant l'ID, flèche vers la maison. Tore canal 1 : seul le fil « phase ballon » le traverse.</text>
+  <text x="56" y="886">• ESP éteint : relais MF au repos → NC fermé → contacteur collé → ballon en direct. En routage, le contacteur est ouvert et le dimmer règle.</text>
+  <text x="56" y="906">• Le neutre du ballon ne passe ni par le dimmer ni par le contacteur ; contacteur et LOAD sont en parallèle sur la phase du ballon.</text>
+</svg>

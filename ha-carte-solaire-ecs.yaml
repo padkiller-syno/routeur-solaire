@@ -1,0 +1,131 @@
+# Carte Home Assistant pour la page « Solaire ECS » (tableau de bord solaire-ecs).
+# Ajout : ouvrir la page → crayon « Modifier le tableau de bord » → « + Ajouter une carte » → tout en bas
+# « Manuel » → coller tout ce fichier → Enregistrer.
+# Uniquement des cartes intégrées à HA (rien à installer). Les noms d'entités sont ceux attendus une fois le
+# D1 mini ajouté dans HA ; si une carte affiche « Entité non disponible », corriger le nom dans l'éditeur.
+type: vertical-stack
+cards:
+  - type: heading
+    heading: Routeur solaire
+    icon: mdi:solar-power-variant
+
+  # --- en direct ---
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: gauge
+        entity: sensor.sdb_routeur_solaire_puissance_reseau
+        name: Réseau (− = injection)
+        min: -3000
+        max: 3000
+        needle: true
+        segments:
+          - from: -3000
+            color: "#e67e22"
+          - from: -30
+            color: "#2e9e3e"
+          - from: 50
+            color: "#c0392b"
+      - type: gauge
+        entity: sensor.sdb_routeur_solaire_puissance_ballon
+        name: Vers le ballon
+        min: 0
+        max: 2000
+      - type: gauge
+        entity: sensor.sdb_routeur_solaire_temperature_ballon
+        name: Eau
+        min: 10
+        max: 80
+        segments:
+          - from: 10
+            color: "#1f6fd1"
+          - from: 40
+            color: "#e67e22"
+          - from: 60
+            color: "#c0392b"
+      - type: gauge
+        entity: sensor.sdb_routeur_solaire_sortie_dimmer
+        name: Dimmer
+        min: 0
+        max: 100
+
+  # --- commandes et réglages ---
+  - type: entities
+    title: Marche forcée
+    show_header_toggle: false
+    entities:
+      - entity: switch.sdb_routeur_solaire_marche_forcee
+        name: Marche forcée maintenant
+      - type: divider
+      - entity: switch.sdb_routeur_solaire_programmation_temperature
+        name: Chauffe si l'eau est trop froide
+      - entity: time.sdb_routeur_solaire_heure_marche_forcee
+        name: Heure de contrôle
+      - entity: number.sdb_routeur_solaire_temperature_marche_forcee
+        name: Température minimale
+      - type: divider
+      - entity: switch.sdb_routeur_solaire_programmation_volume
+        name: Programmation selon le volume
+      - entity: number.sdb_routeur_solaire_volume_ballon
+        name: Volume du ballon
+
+  # --- état ---
+  - type: glance
+    title: État
+    show_state: true
+    entities:
+      - entity: binary_sensor.sdb_routeur_solaire_ballon_chaud
+        name: Ballon chaud
+      - entity: binary_sensor.sdb_routeur_solaire_relais_marche_forcee
+        name: Contacteur
+      - entity: binary_sensor.sdb_routeur_solaire_relais_surplus
+        name: Relais surplus
+      - entity: binary_sensor.sdb_routeur_solaire_securite_triac
+        name: Sécurité triac
+      - entity: binary_sensor.sdb_routeur_solaire_mesure_jsy
+        name: Mesure JSY
+
+  # --- énergie ---
+  - type: entities
+    title: Énergie
+    entities:
+      - entity: sensor.sdb_routeur_solaire_energie_routee_aujourd_hui
+        name: Routée aujourd'hui
+      - entity: sensor.sdb_routeur_solaire_energie_routee
+        name: Routée au total
+      - entity: sensor.ballon_temperature_max_7_jours
+        name: Eau, max sur 7 jours (anti-légionelle)
+      - entity: sensor.sdb_routeur_solaire_temperature_triac
+        name: Triac
+
+  # --- historique ---
+  - type: history-graph
+    title: Puissances (24 h)
+    hours_to_show: 24
+    entities:
+      - entity: sensor.sdb_routeur_solaire_puissance_reseau
+        name: Réseau
+      - entity: sensor.sdb_routeur_solaire_puissance_ballon
+        name: Ballon
+  - type: history-graph
+    title: Température de l'eau (7 jours)
+    hours_to_show: 168
+    entities:
+      - entity: sensor.sdb_routeur_solaire_temperature_ballon
+        name: Eau
+
+  # --- réglages avancés (repliés dans une petite carte) ---
+  - type: entities
+    title: Réglages avancés
+    state_color: false
+    entities:
+      - entity: number.sdb_routeur_solaire_relais_surplus_seuil_marche
+        name: Relais surplus, seuil marche
+      - entity: number.sdb_routeur_solaire_relais_surplus_seuil_arret
+        name: Relais surplus, seuil arrêt
+      - type: divider
+      - entity: switch.sdb_routeur_solaire_sortie_2_active
+        name: Sortie 2 (dimmer 2) active
+      - entity: sensor.sdb_routeur_solaire_sortie_dimmer_2
+        name: Dimmer 2
