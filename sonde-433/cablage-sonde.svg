@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 930" width="1040" height="930" font-family="DejaVu Sans, Arial, sans-serif" font-size="13">
+  <rect width="1040" height="930" fill="#ffffff"/>
+  <style>
+    .box { fill: #f6f7f9; stroke: #444; stroke-width: 1.5; }
+    .zone { fill: none; stroke: #999; stroke-width: 1.2; stroke-dasharray: 6 4; }
+    .titre { font-weight: bold; font-size: 14px; fill: #222; }
+    .petit { font-size: 11px; fill: #555; }
+    .pin { font-size: 12px; fill: #222; font-weight: bold; }
+    .bat { fill: none; stroke: #c0392b; stroke-width: 3; stroke-linejoin: round; }
+    .v33 { fill: none; stroke: #d6337a; stroke-width: 3; stroke-linejoin: round; }
+    .gnd { fill: none; stroke: #222; stroke-width: 3; stroke-linejoin: round; }
+    .d2 { fill: none; stroke: #2471a3; stroke-width: 3; stroke-linejoin: round; }
+    .d3 { fill: none; stroke: #1e8449; stroke-width: 3; stroke-linejoin: round; }
+    .d4 { fill: none; stroke: #7d3c98; stroke-width: 3; stroke-linejoin: round; }
+    .ant { fill: none; stroke: #b9770e; stroke-width: 2.5; }
+  </style>
+
+  <text x="520" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#222">Sonde déportée du ballon (433 MHz) — câblage</text>
+  <text x="520" y="56" text-anchor="middle" class="petit">Pro Mini 8 MHz alimenté directement par la 18650 (via la protection du TP4056) ; le routeur reçoit sur J2 (GPIO4). Firmware : sonde-433/src/main.cpp.</text>
+
+  <!-- ===================== Zone ballon ===================== -->
+  <rect x="20" y="75" width="1000" height="530" rx="10" class="zone"/>
+  <text x="34" y="95" class="titre" fill="#777">CÔTÉ BALLON (petit boîtier, à 1-2 m du ballon)</text>
+
+  <!-- 18650 -->
+  <rect x="60" y="115" width="220" height="60" rx="8" class="box"/>
+  <text x="170" y="140" text-anchor="middle" class="titre">Support 18650</text>
+  <text x="170" y="158" text-anchor="middle" class="petit">cellule de marque, 3,0 – 4,2 V</text>
+  <text x="112" y="192" class="pin" fill="#c0392b">+</text>
+  <text x="226" y="192" class="pin">−</text>
+
+  <!-- TP4056 -->
+  <rect x="60" y="240" width="220" height="150" rx="8" class="box"/>
+  <text x="170" y="300" text-anchor="middle" class="titre">Module TP4056</text>
+  <text x="170" y="318" text-anchor="middle" class="petit">charge + protection (DW01)</text>
+  <text x="170" y="334" text-anchor="middle" class="petit">6 pastilles</text>
+  <text x="120" y="262" text-anchor="middle" class="pin">B+</text>
+  <text x="220" y="262" text-anchor="middle" class="pin">B−</text>
+  <text x="270" y="288" text-anchor="end" class="pin">OUT+</text>
+  <text x="270" y="338" text-anchor="end" class="pin">OUT−</text>
+  <rect x="30" y="345" width="40" height="30" rx="6" fill="#ddd" stroke="#444" stroke-width="1.5"/>
+  <text x="50" y="364" text-anchor="middle" font-size="10" font-weight="bold">USB-C</text>
+  <text x="34" y="400" class="petit">recharge : chargeur 5 V</text>
+
+  <path class="bat" d="M120,175 V240"/>
+  <path class="gnd" d="M220,175 V240"/>
+
+  <!-- Pro Mini -->
+  <rect x="400" y="230" width="200" height="350" rx="8" class="box"/>
+  <text x="490" y="398" text-anchor="middle" class="titre">Arduino Pro Mini</text>
+  <text x="490" y="414" text-anchor="middle" class="petit">ATmega328P, 8 MHz</text>
+  <text x="490" y="432" text-anchor="middle" class="petit" fill="#c0392b">retirer la résistance 102</text>
+  <text x="490" y="446" text-anchor="middle" class="petit" fill="#c0392b">de la LED d'alimentation</text>
+  <text x="490" y="460" text-anchor="middle" class="petit">RAW : non branché</text>
+  <text x="410" y="284" class="pin">VCC</text>
+  <text x="410" y="334" class="pin">GND</text>
+  <text x="590" y="274" text-anchor="end" class="pin">VCC</text>
+  <text x="590" y="324" text-anchor="end" class="pin">GND</text>
+  <text x="590" y="374" text-anchor="end" class="pin">D2</text>
+  <text x="590" y="474" text-anchor="end" class="pin">D4</text>
+  <text x="590" y="504" text-anchor="end" class="pin">D3</text>
+  <text x="590" y="534" text-anchor="end" class="pin">GND</text>
+
+  <path class="bat" d="M280,280 H400"/>
+  <path class="gnd" d="M280,330 H400"/>
+  <text x="340" y="272" text-anchor="middle" class="petit" fill="#c0392b">3,0 – 4,2 V</text>
+
+  <!-- STX882 -->
+  <rect x="700" y="240" width="170" height="160" rx="8" class="box"/>
+  <text x="815" y="300" text-anchor="middle" class="titre">STX882</text>
+  <text x="815" y="345" text-anchor="middle" class="petit">émetteur</text>
+  <text x="815" y="359" text-anchor="middle" class="petit">433 MHz</text>
+  <text x="710" y="274" class="pin">VCC</text>
+  <text x="710" y="324" class="pin">GND</text>
+  <text x="710" y="374" class="pin">DATA</text>
+  <path class="ant" d="M870,260 H900 V130"/>
+  <path class="ant" d="M893,130 l7,-10 l7,10"/>
+  <text x="890" y="150" text-anchor="end" class="petit">ANT : ressort fourni</text>
+  <text x="890" y="164" text-anchor="end" class="petit">ou fil rigide 17,3 cm</text>
+  <text x="890" y="178" text-anchor="end" class="petit">vertical</text>
+
+  <path class="bat" d="M600,270 H700"/>
+  <path class="gnd" d="M600,320 H700"/>
+  <path class="d2" d="M600,370 H700"/>
+  <text x="650" y="362" text-anchor="middle" class="petit" fill="#2471a3">trame</text>
+
+  <!-- DS18B20 -->
+  <rect x="700" y="440" width="170" height="115" rx="8" class="box"/>
+  <text x="815" y="482" text-anchor="middle" class="titre">Adaptateur</text>
+  <text x="815" y="498" text-anchor="middle" class="titre">DS18B20</text>
+  <text x="815" y="530" text-anchor="middle" class="petit">4,7 kΩ intégrée</text>
+  <text x="710" y="474" class="pin">VCC</text>
+  <text x="710" y="504" class="pin">DAT</text>
+  <text x="710" y="534" class="pin">GND</text>
+  <path class="d4" d="M600,470 H700"/>
+  <path class="d3" d="M600,500 H700"/>
+  <path class="gnd" d="M600,530 H700"/>
+  <text x="650" y="462" text-anchor="middle" class="petit" fill="#7d3c98">alim. sonde</text>
+
+  <path d="M870,500 H950" fill="none" stroke="#555" stroke-width="4"/>
+  <rect x="950" y="490" width="55" height="20" rx="10" fill="#bbb" stroke="#444" stroke-width="1.5"/>
+  <text x="978" y="530" text-anchor="middle" class="petit">sonde étanche</text>
+  <text x="978" y="544" text-anchor="middle" class="petit">dans le doigt</text>
+  <text x="978" y="558" text-anchor="middle" class="petit">de gant</text>
+
+  <!-- ===================== Zone routeur ===================== -->
+  <rect x="20" y="625" width="640" height="285" rx="10" class="zone"/>
+  <text x="34" y="645" class="titre" fill="#777">CÔTÉ ROUTEUR (près du tableau)</text>
+
+  <rect x="80" y="680" width="200" height="130" rx="8" class="box"/>
+  <text x="140" y="740" text-anchor="middle" class="titre">Bornier J2</text>
+  <text x="140" y="758" text-anchor="middle" class="petit">carte du routeur</text>
+  <text x="270" y="714" text-anchor="end" class="pin">3,3 V</text>
+  <text x="270" y="749" text-anchor="end" class="pin">DAT (GPIO4)</text>
+  <text x="270" y="784" text-anchor="end" class="pin">GND</text>
+
+  <rect x="420" y="670" width="200" height="150" rx="8" class="box"/>
+  <text x="530" y="790" text-anchor="middle" class="titre">SRX882</text>
+  <text x="530" y="808" text-anchor="middle" class="petit">récepteur 433 MHz</text>
+  <text x="430" y="704" class="pin">VCC</text>
+  <text x="430" y="734" class="pin">CS</text>
+  <text x="430" y="764" class="pin">DATA</text>
+  <text x="430" y="794" class="pin">GND</text>
+  <path class="ant" d="M620,690 H640 V640"/>
+  <path class="ant" d="M633,640 l7,-10 l7,10"/>
+
+  <path class="v33" d="M280,710 H350 V700 H420"/>
+  <path class="v33" d="M350,710 V730 H420"/>
+  <circle cx="350" cy="710" r="4.5" fill="#d6337a"/>
+  <path class="d2" d="M280,745 H380 V760 H420"/>
+  <path class="gnd" d="M280,780 H350 V790 H420"/>
+  <text x="300" y="830" class="petit">CS relié à VCC (récepteur actif en permanence).</text>
+  <text x="300" y="845" class="petit">Antenne hors du tableau s'il est métallique.</text>
+  <text x="300" y="860" class="petit">yaml : remote_receiver sur GPIO4 (esphome/routeur-solaire.yaml).</text>
+  <text x="40" y="890" class="petit">Repérer les broches du SRX882 et du STX882 d'après leur sérigraphie (l'ordre varie selon les séries).</text>
+
+  <!-- ===================== Notes ===================== -->
+  <rect x="680" y="625" width="340" height="285" rx="10" fill="#fff8e6" stroke="#b9770e" stroke-width="1.2"/>
+  <text x="696" y="648" class="titre">À retenir</text>
+  <text x="696" y="672" font-size="12">• Cellule directement sur VCC (par OUT+),</text>
+  <text x="708" y="688" font-size="12">pas sur RAW.</text>
+  <text x="696" y="710" font-size="12">• Toutes les masses sur OUT−, jamais sur B−</text>
+  <text x="708" y="726" font-size="12">(sinon la protection est court-circuitée).</text>
+  <text x="696" y="748" font-size="12">• Résistance 102 de la LED d'alim. retirée :</text>
+  <text x="708" y="764" font-size="12">sinon ~3 mA en permanence.</text>
+  <text x="696" y="786" font-size="12">• Câble de sonde court, loin du câble 230 V</text>
+  <text x="708" y="802" font-size="12">du ballon.</text>
+  <text x="696" y="824" font-size="12">• Une trame toutes les ~60 s ; batterie</text>
+  <text x="708" y="840" font-size="12">visible dans HA (« Batterie sonde ballon »).</text>
+  <text x="696" y="862" font-size="12">• Programmation : USBasp sur D11, D12, D13,</text>
+  <text x="708" y="878" font-size="12">RST, VCC, GND (voir README).</text>
+  <text x="696" y="900" font-size="12">• Consommation moyenne ≈ 0,15 mA.</text>
+</svg>

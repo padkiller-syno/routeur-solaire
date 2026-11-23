@@ -16,6 +16,9 @@ SRX882 sur le bornier J2), **sans passer par Home Assistant ni le wifi**.
 
 ## Câblage du Pro Mini
 
+Schéma complet (sonde, routeur, antennes) : [cablage-sonde.svg](cablage-sonde.svg).
+Boîtier imprimé : [boitier/](boitier/README.md) (18650 et TP4056 au fond, plaque à pastilles au-dessus).
+
 | Pro Mini | Vers |
 |---|---|
 | VCC | **+ de la cellule 18650** (borne B+ du module), pas les broches 3,3 V du module |
@@ -38,14 +41,29 @@ sur la cellule** (3,0 à 4,2 V, que le Pro Mini, la DS18B20 et le STX882 accepte
 `platformio.ini` + `src/main.cpp`. Deux versions selon le quartz du Pro Mini (lire le boîtier argenté ou la référence
 du régulateur : 8 MHz = version 3,3 V, 16 MHz = version 5 V) :
 
+Le Pro Mini de la sonde est un **8 MHz** (vérifié le 23/11 par un test de clignotement : le fusible bas `0xFF` est le même
+sur les deux versions). Il est programmé en **ISP par un USBasp**, cellule débranchée :
+
+| USBasp (10 broches) | Pro Mini |
+|---|---|
+| 1 MOSI | D11 |
+| 9 MISO | D12 |
+| 7 SCK | D13 |
+| 5 RESET | RST |
+| 2 VCC | VCC |
+| 4 GND | GND |
+
+Cavalier du USBasp sur **5 V** (rangée 5V/3.3V), **JP2 retiré** (JP2 = auto-programmation du USBasp lui-même). Puis :
+
 ```
-pio run -e pro_mini_16mhz -t upload --upload-port /dev/ttyUSB0   # Pro Mini 5 V
-pio run -e pro_mini_8mhz  -t upload --upload-port /dev/ttyUSB0   # Pro Mini 3,3 V
+pio run -t upload
 ```
 
-Téléversement par un adaptateur USB-série 6 broches (DTR, RX, TX, VCC, CTS, GND), **cellule débranchée**. Pour voir les
-mesures sur le port série : ajouter `build_flags = -DDEBUG` (plus `-DQUARTZ_16MHZ` pour la version 16 MHz),
-`pio device monitor`.
+Accès au USBasp sans root : règle udev `/etc/udev/rules.d/99-usbasp.rules` (16c0:05dc, groupe `dialout`, `uaccess`).
+Le flash ISP a effacé le bootloader d'origine (ATmegaBOOT 57 600 bauds) : ça ne gêne pas, la carte démarre directement
+sur le firmware. L'adaptateur PL2303 (copie) ne fonctionne pas sous Linux (erreurs `-32`) : ne pas s'en servir.
+Les versions `*_debug` écrivent sur le port série (57 600 bauds) : il faut alors un adaptateur USB-série qui marche (CH340,
+CP2102) relié à TXO/GND.
 
 Fonctionnement : mesure (résolution 11 bits), tension de la batterie (référence interne), émission de la trame 5 fois
 (~0,3 s), puis veille profonde 7 × 8 s. Sous 3,1 V : un envoi toutes les ~10 min seulement.
