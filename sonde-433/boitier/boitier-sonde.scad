@@ -1,6 +1,6 @@
 // Boîtier imprimé 3D de la sonde déportée du ballon (433 MHz).
 // Au fond : support 18650 (avant) et module TP4056 (arrière, USB-C dans la paroi gauche).
-// Au-dessus : plaque à pastilles 60 × 40 (Pro Mini + STX882 + adaptateur DS18B20) posée sur deux rebords,
+// Au-dessus : plaque à pastilles 60 × 40 (Pro Mini + STX882 + adaptateur DS18B20 couché) posée sur deux rebords,
 // maintenue par 4 tétons du couvercle. Presse-étoupe PG7 de la sonde dans la paroi droite.
 //   openscad -D 'part="fond"' -o fond.stl boitier-sonde.scad
 //   openscad -D 'part="couvercle"' -o couvercle.stl boitier-sonde.scad
@@ -21,19 +21,25 @@ usb_h = 3.4;
 perf_l = 60;      // plaque à pastilles 60 × 40
 perf_w = 40;
 perf_e = 1.6;
-comp_h = 15;      // composants au-dessus de la plaque (bornier de l'adaptateur, ressort d'antenne couché)
+comp_h = 14;      // composants au-dessus de la plaque (adaptateur DS18B20 couché + bornier ≈ 12-13 mm)
+adapt_debord = 14; // l'adaptateur couché dépasse de la plaque vers le presse-étoupe
 pg_d = 12.5;      // presse-étoupe PG7 (câble 3-6,5 mm) ; 5 pour un simple trou + colle
 insert_d = 3.7;   // inserts M3 à chaud (comme le boîtier du routeur)
 insert_l = 5;
-antenne = [perf_l - 12, perf_w - 4];   // trou du fil d'antenne de 17,3 cm (repère intérieur), [] = pas de trou
+antenne = [4, 31];   // pastille ANT du STX882 (repère intérieur ≈ repère de la plaque) ; [] = pas de trou
 
 // ------------------------------------------------------------------ boîtier
 jeu = 0.3;
-paroi = 2;
-fond_e = 2;
-couv_e = 2;
+// Économie de matière : parois de 1,6 = 4 passes de buse 0,4 ; fond ajouré (côté mur) ; colonnes réduites à un bossage.
+paroi = 1.6;
+fond_e = 1.6;
+couv_e = 1.6;
+fond_ajoure = true;   // nid d'abeille dans le fond (caché contre le mur) ; false si le boîtier est posé autrement
+alveole = 9;          // alvéoles hexagonales (diamètre sur les pointes)
+nervure = 1.6;        // nervures entre alvéoles
+bossage_h = 9;        // hauteur du bossage d'insert en tête de colonne
 cale = 2;                         // rails sous le TP4056 (place des soudures)
-int_l = max(perf_l + 2 * jeu + 12, bat_l + 4);   // ≥ 12 mm à droite de la plaque pour l'écrou du presse-étoupe
+int_l = max(perf_l + 2 * jeu + adapt_debord + 8, bat_l + 4);   // adaptateur qui dépasse + écrou du presse-étoupe
 int_p = max(perf_w + 2 * jeu, bat_w + tp_w + 7);  // 18650 et TP4056 côte à côte
 corbeau_av = 2.5;                                  // rebord avant sous la plaque
 corbeau_ar = 2.5 + int_p - 2 * jeu - perf_w;      // rebord arrière, élargi si la boîte est plus profonde que la plaque
@@ -56,6 +62,12 @@ module contour(h) {
 }
 
 // ------------------------------------------------------------------ fond
+// prolonge une pièce posée sur le fond de 0,3 mm vers le bas, pour qu'elle fasse corps avec lui
+module ancre() {
+    children();
+    translate([0, 0, -0.3]) linear_extrude(0.31) projection(cut = true) translate([0, 0, -0.05]) children();
+}
+
 module berceau_18650() {
     x0 = 0.5; y0 = jeu;
     // rail arrière (l'avant est la paroi)
@@ -81,16 +93,38 @@ module logement_tp4056() {
 module rebords_plaque() {
     // corbeaux à 45° le long des parois avant et arrière, butée de fin de plaque
     for (m = [0, 1]) let(d = m ? corbeau_ar : corbeau_av) translate([0, m ? int_p : 0, 0]) mirror([0, m, 0]) {
-        translate([0, 0, z_perf]) rotate([0, 90, 0]) linear_extrude(perf_l + 2 * jeu)
-            polygon([[0, 0], [0, d], [d, 0]]);
-        translate([perf_l + 2 * jeu, 0, z_perf - d]) cube([1.5, d + 1.5, d + perf_e + 1]);
+        translate([-0.3, 0, z_perf]) rotate([0, 90, 0]) linear_extrude(perf_l + 2 * jeu + 0.3)
+            polygon([[0, -0.3], [0, d], [d + 0.3, -0.3]]);   // ancré de 0,3 dans la paroi
+        translate([perf_l + 2 * jeu, -0.3, z_perf - d]) cube([1.5, d + 1.8, d + perf_e]);   // à ras de la plaque (adaptateur couché au-dessus)
     }
 }
 
 module colonnes_vis() {
-    for (c = colonnes) translate([c[0], c[1], 0]) difference() {
-        cylinder(d = 8, h = ext_h);
-        translate([0, 0, ext_h - insert_l]) cylinder(d = insert_d, h = insert_l + 1);
+    // bossage en tête seulement, porté par un gousset à 45° qui descend dans l'angle des parois
+    for (c = colonnes) {
+        coin = [c[0] < 0 ? 0 : ext_l - paroi, c[1] < 0 ? 0 : ext_p - paroi];
+        hull() {
+            translate([c[0], c[1], ext_h - bossage_h]) cylinder(d = 8, h = bossage_h);
+            translate([coin[0], coin[1], ext_h - bossage_h - 9]) cube([paroi, paroi, 0.01]);
+        }
+    }
+}
+
+// alvéoles du fond, hors des zones qui portent un rail, une butée ou le logement du TP4056
+module nid_abeille() {
+    pas = alveole * cos(30) + nervure;
+    marge = 2.5;
+    difference() {
+        intersection() {
+            translate([marge, marge]) square([int_l - 2 * marge, int_p - 2 * marge]);
+            for (j = [0 : ceil(int_p / (pas * sin(60)))], i = [-1 : ceil(int_l / pas)])
+                translate([i * pas + (j % 2) * pas / 2, j * pas * sin(60)]) rotate(30) circle(d = alveole, $fn = 6);
+        }
+        // logement du TP4056
+        translate([tp_debord - 2.5, y_tp - 2.5]) square([tp_l + jeu + 5, tp_w + 2 * jeu + 5]);
+        // rail arrière et butées du support 18650
+        translate([0.5 + 8 - 1, jeu + bat_w + jeu - 1]) square([bat_l - 14, 3.5]);
+        translate([0.5 + bat_l + jeu - 1, 0]) square([3.5, bat_w + 2]);
     }
 }
 
@@ -118,15 +152,16 @@ module ouvertures() {
 module fond() {
     difference() {
         union() {
-            contour(ext_h);
+            cube([ext_l, ext_p, ext_h]);
             colonnes_vis();
             pattes();
         }
         translate([paroi, paroi, fond_e]) cube([int_l, int_p, int_h + 1]);
         for (c = colonnes) translate([c[0], c[1], ext_h - insert_l]) cylinder(d = insert_d, h = insert_l + 1);
         ouvertures();
+        if (fond_ajoure) translate([paroi, paroi, -1]) linear_extrude(fond_e + 2) nid_abeille();
     }
-    I() { berceau_18650(); logement_tp4056(); rebords_plaque(); }
+    I() { ancre() berceau_18650(); ancre() logement_tp4056(); rebords_plaque(); }
 }
 
 // ------------------------------------------------------------------ couvercle (imprimé face extérieure sur le plateau)

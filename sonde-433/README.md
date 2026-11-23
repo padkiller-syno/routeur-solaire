@@ -18,6 +18,7 @@ SRX882 sur le bornier J2), **sans passer par Home Assistant ni le wifi**.
 
 Schéma complet (sonde, routeur, antennes) : [cablage-sonde.svg](cablage-sonde.svg).
 Boîtier imprimé : [boitier/](boitier/README.md) (18650 et TP4056 au fond, plaque à pastilles au-dessus).
+Placement sur la plaque 60 × 40 et fils : [placement-plaque.svg](placement-plaque.svg).
 
 | Pro Mini | Vers |
 |---|---|
