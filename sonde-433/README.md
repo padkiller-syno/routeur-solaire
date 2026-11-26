@@ -62,7 +62,20 @@ pio run -t upload
 
 Accès au USBasp sans root : règle udev `/etc/udev/rules.d/99-usbasp.rules` (16c0:05dc, groupe `dialout`, `uaccess`).
 Le flash ISP a effacé le bootloader d'origine (ATmegaBOOT 57 600 bauds) : ça ne gêne pas, la carte démarre directement
-sur le firmware. L'adaptateur PL2303 (copie) ne fonctionne pas sous Linux (erreurs `-32`) : ne pas s'en servir.
+sur le firmware.
+
+**Par le bootloader** (Pro Mini qui l'a encore, 2e carte flashée ainsi le 26/11) : adaptateur série PL2303 (TX → RXI,
+RX → TXO, VCC, GND), 57 600 bauds pour un 8 MHz. Le PL2303 n'a **pas de DTR** : appuyer sur **reset** du Pro Mini dès que
+la commande démarre (le bootloader n'écoute qu'environ 1 s ; une carte vierge, elle, y reste en permanence) :
+
+```bash
+pio run -e pro_mini_8mhz
+~/.platformio/packages/tool-avrdude/avrdude -C ~/.platformio/packages/tool-avrdude/avrdude.conf \
+  -p m328p -c arduino -P /dev/ttyUSB0 -b 57600 -D -U flash:w:.pio/build/pro_mini_8mhz/firmware.hex:i
+```
+
+Le PL2303 (copie, 067b:2303) a renvoyé des erreurs `-32` le 23/11 mais a fonctionné le 26/11 : s'il échoue, débrancher et
+rebrancher, sinon passer par le USBasp.
 Les versions `*_debug` écrivent sur le port série (57 600 bauds) : il faut alors un adaptateur USB-série qui marche (CH340,
 CP2102) relié à TXO/GND.
 
