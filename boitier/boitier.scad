@@ -115,17 +115,19 @@ module ouvertures() {
 }
 
 // ------------------------------------------------------------------ alimentation 230 V → 5 V interne
-// Mean Well IRM-05-5 (33,7 × 22,2 × 15) posé sur une console accrochée à la paroi avant, au-dessus du relais avant.
-// Pattes vers le bas dans deux fentes : fils soudés et gainés sous la console, sortie 5 V soudée dans J4.
-// Porte-fusible de façade 5 × 20 (trou Ø 12,3) dans la paroi avant, à droite de la console (fusible T1A sur L).
+// Module 230 V → 5 V reçu : 45 × 25 × 20 (plus grand que l'IRM-05-5 standard de 33,7 × 22,2 × 15), posé sur une
+// console accrochée à la paroi avant, au-dessus du relais avant. Pattes vers le bas dans deux fentes aux extrémités :
+// fils soudés et gainés sous la console, sortie 5 V vers J4.
+// Porte-fusible de façade 5 × 20 (trou Ø 12,3) dans la paroi DROITE, au-dessus des presse-étoupes des relais (fusible T1A sur L).
 // Coordonnées en repère boîtier (communes aux boîtiers v1 et v2, mêmes dimensions intérieures).
-alim = [33.7, 22.2, 15];
+alim = [45, 25, 20];
 alim_jeu = 0.2;          // serré : une goutte de silicone neutre suffit à le bloquer
-alim_x0 = 98;            // bord gauche du logement (presse-étoupe avant v1 jusqu'à x 92,6)
-alim_z = 55;             // dessus de la console (dessous des goussets > haut des relais, z ≈ 39)
+alim_x0 = 100.5;         // bord gauche du logement : gousset gauche à x 96, après l'écrou du presse-étoupe avant (x ≤ 95,5)
+alim_z = 52;             // dessus de la console : dessus du module à 72, sous la lèvre du couvercle (z 73,1)
+relais_haut = 39.1;      // dessus du relais avant, sous l'extrémité droite de la console
 console_e = 2.5;
 logement_h = 8;          // hauteur des rebords du logement
-fusible_x = 145;         // axe du porte-fusible
+fusible_y = 40;          // axe du porte-fusible, paroi droite (presse-étoupes des relais à y 22 et 45, z 31)
 fusible_z = 60;
 fusible_d = 12.3;
 
@@ -137,9 +139,11 @@ module console_alim() {
     difference() {
         union() {
             translate([alim_x0 - r, paroi - 0.01, alim_z - console_e]) cube([lx + 2 * r, p, console_e + logement_h]);
-            // goussets à 45° (imprimables sans support), un de chaque côté
-            for (x = [alim_x0 - r - 2.9, alim_x0 + lx + r - 0.1]) translate([x, paroi - 0.01, alim_z - console_e + 0.01])
-                rotate([90, 0, 90]) linear_extrude(3) polygon([[0, 0], [p, 0], [0, -p]]);
+            // goussets à 45° (imprimables sans support) : plein à gauche, réduit à droite pour rester au-dessus du relais
+            g = alim_z - console_e - relais_haut - 0.5;
+            for (c = [[alim_x0 - r - 2.9, p], [alim_x0 + lx + r - 0.1, min(p, g)]])
+                translate([c[0], paroi - 0.01, alim_z - console_e + 0.01])
+                    rotate([90, 0, 90]) linear_extrude(3) polygon([[0, 0], [c[1], 0], [0, -c[1]]]);
         }
         translate([alim_x0, paroi - 0.02, alim_z]) cube([lx, ly + 0.02, logement_h + 1]);          // logement
         for (x = [alim_x0 + 0.6, alim_x0 + lx - 0.6 - 6])                                         // fentes des pattes
@@ -147,7 +151,7 @@ module console_alim() {
     }
 }
 module trou_fusible() {
-    translate([fusible_x, paroi / 2, fusible_z]) rotate([90, 0, 0]) cylinder(d = fusible_d, h = paroi * 4, center = true);
+    translate([ext_l - paroi / 2, fusible_y, fusible_z]) rotate([0, 90, 0]) cylinder(d = fusible_d, h = paroi * 4, center = true);
 }
 
 module fond() {

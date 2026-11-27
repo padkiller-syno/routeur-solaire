@@ -37,9 +37,12 @@ openscad -D 'part="couvercle"' -o couvercle.stl boitier.scad
   arrière et gauche.
 - **Couvercle** vissé dans 4 colonnes d'angle, insert M3 en tête de chaque colonne (vis M3 × 10 à tête fraisée).
 - **4 pattes de fixation murale** (vis Ø 4-5 mm, tête fraisée).
-- **Alimentation 5 V interne** : console contre la paroi avant, au-dessus du relais avant, pour un **Mean Well
-  IRM-05-5** (5 V 1 A, classe II) posé pattes vers le bas dans deux fentes ; trou Ø 12,3 à côté pour un
-  **porte-fusible de façade 5 × 20** (fusible **T1A** temporisé sur la phase). Câblage : L de l'arrivée → fusible → IRM
+- **Alimentation 5 V interne** : console contre la paroi avant, au-dessus du relais avant, pour le module reçu
+  **45 × 25 × 20 mm** (5 V, plus grand que l'IRM-05-5 standard de 33,7 × 22,2 × 15 ; cotes dans `alim`), posé pattes
+  vers le bas dans deux fentes aux extrémités ; console à z 52 (dessus du module à 72, sous la lèvre du couvercle),
+  gousset droit réduit pour rester au-dessus du relais avant. Trou Ø 12,3 dans la **paroi droite** (au-dessus des
+  presse-étoupes des relais) pour un **porte-fusible de façade 5 × 20** (fusible **T1A** temporisé sur la phase).
+  Câblage : L de l'arrivée → fusible → alimentation
   et bornes L/N du JSY ; fils soudés sur les pattes et gainés (thermorétractable), sortie +5 V / GND vers **J4** (fiche
   débrochable). Une goutte de silicone neutre bloque le module dans son logement.
 - Mention gravée au fond : « 230 V : ne pas ouvrir sous tension ».
@@ -57,7 +60,7 @@ Pose des inserts : fer à souder vers 220-240 °C (PETG), insert bien droit, enf
 | Ventilateur → couvercle : vis M3 × 14 + écrous (ou vis de ventilateur) | 4 |
 | Presse-étoupes M20 / M16 | 2 / 4 |
 | Fixation murale : vis Ø 4-5 + chevilles | 4 |
-| Alimentation : Mean Well IRM-05-5, porte-fusible de façade 5 × 20 (250 V), fusible T1A 250 V | 1 + 1 + 1 |
+| Alimentation 230 V → 5 V (module 45 × 25 × 20), porte-fusible de façade 5 × 20 (250 V), fusible T1A 250 V | 1 + 1 + 1 |
 
 ## À vérifier au premier montage
 
